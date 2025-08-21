@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams } from "react-router-dom";
-import { projectData } from '../../data/projectsData'; // Ensure this path is correct
-import Navbar from '../../components/Navbar'; // Ensure this path is correct
+import { useParams, Link } from "react-router-dom";
+import { projectData } from '../../data/projectsData';
+import Navbar from '../../components/Navbar';
 import { HeartIcon, ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, PhoneIcon, MessageCircleIcon, XIcon, SearchIcon } from 'lucide-react';
 
 // --- FILTER DATA CONSTANTS ---
@@ -14,12 +14,12 @@ const filterOptions = {
         'New Maninagar', 'Paldi', 'Panjrapole', 'Prahlad Nagar', 'Sabarmati', 'Sanand',
         'Sanathal', 'Satellite', 'Science City', 'Science Park', 'SG highway', 'Shela Shilaj',
         'Sindhubhavan Road', 'Sola', 'South Bopal', 'Thaltej', 'Tragad', 'Vaishnodevi',
-        'Zundal', 'Vastrapur'
+        'Zundal', 'Vastrapur', 'Shela'
     ],
     bhk: ['1 BHK', '2 BHK', '3 BHK', '4 BHK', '5 BHK', '6 BHK', '7 BHK'],
     possession: ['Ready to Move', 'Upto 1 Year', 'Upto 2 Years', '2+ Years'],
-    propertyType: ['Flat', 'Penthouse', 'Duplex'],
-    sortBy: ['Relevance', 'New Launch', 'Price: low to high', 'Price: high to low', 'Near possession']
+    propertyType: ['Flat', 'Penthouse', 'Duplex', 'Villa', 'House'],
+    sortBy: ['Relevance', 'New Launch', 'Price: Low to High', 'Price: High to Low', 'Near Possession']
 };
 
 const initialFilters = {
@@ -32,7 +32,111 @@ const initialFilters = {
     searchQuery: '',
 };
 
-// --- NEW COMPONENT: TAG-STYLE FILTER DROPDOWN ---
+// --- MAPPING FOR NAVBAR FILTERS ---
+const navbarFilterMap: { [key: string]: Partial<typeof initialFilters> } = {
+    'ready-to-move': { possession: ['Ready to Move'] },
+    'possession-within-1-year': { possession: ['Upto 1 Year'] },
+    'possession-within-2-year': { possession: ['Upto 2 Years'] },
+    'possession-more-than-2-years': { possession: ['2+ Years'] },
+    'new-launch-projects': { sortBy: ['New Launch'] },
+    'flat-in-ahmedabad': { propertyType: ['Flat'] },
+    'house-for-sale-in-ahmedabad': { propertyType: ['House'] },
+    'villa-in-ahmedabad': { propertyType: ['Villa'] },
+    'weekend-home-in-ahmedabad': { propertyType: ['House'] },
+    'penthouse-for-sale-in-ahmedabad': { propertyType: ['Penthouse'] },
+    'duplex-for-sale-in-ahmedabad': { propertyType: ['Duplex'] },
+    'under-50-lac': { budget: { min: '0', max: '50' } },
+    '50-lac-to-75-lac': { budget: { min: '50', max: '75' } },
+    '75-lac-to-1.25-cr': { budget: { min: '75', max: '125' } },
+    '1.25-cr-to-2-cr': { budget: { min: '125', max: '200' } },
+    '2-cr-to-3-cr': { budget: { min: '200', max: '300' } },
+    '3-cr-to-5-cr': { budget: { min: '300', max: '500' } },
+    'above-3-cr': { budget: { min: '300', max: '' } }
+};
+
+// --- UTILITY FUNCTIONS ---
+const parsePrice = (priceStr: string | null): number => {
+    if (!priceStr || priceStr.toLowerCase().includes('request')) return 0;
+    const cleanStr = priceStr.replace(/[₹,\s]/g, '').toLowerCase();
+    const match = cleanStr.match(/(\d+\.?\d*)/);
+    if (!match) return 0;
+    const value = parseFloat(match[1]);
+    if (cleanStr.includes('cr')) return value * 100;
+    if (cleanStr.includes('lac') || cleanStr.includes('l')) return value;
+    return value;
+};
+
+const getPriceRange = (priceStr: string | null): { min: number; max: number } => {
+    if (!priceStr || priceStr.toLowerCase().includes('request')) return { min: 0, max: 0 };
+    if (priceStr.includes(' - ')) {
+        const [minStr, maxStr] = priceStr.split(' - ');
+        return {
+            min: parsePrice(minStr.trim()),
+            max: parsePrice(maxStr.trim())
+        };
+    }
+    const price = parsePrice(priceStr);
+    return { min: price, max: price };
+};
+
+const getPossessionMonths = (possession: string): number => {
+    const possessionLower = possession.toLowerCase();
+    if (possessionLower.includes('ready')) return 0;
+    const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+                        'july', 'august', 'september', 'october', 'november', 'december'];
+    for (let i = 0; i < monthNames.length; i++) {
+        if (possessionLower.includes(monthNames[i])) {
+            const yearMatch = possession.match(/\d{4}/);
+            if (yearMatch) {
+                const year = parseInt(yearMatch[0]);
+                const currentDate = new Date();
+                const targetDate = new Date(year, i, 1);
+                const diffInMonths = (targetDate.getFullYear() - currentDate.getFullYear()) * 12 +
+                                    (targetDate.getMonth() - currentDate.getMonth());
+                return Math.max(0, diffInMonths);
+            }
+        }
+    }
+    if (possessionLower.includes('1 year') || possessionLower.includes('within 1')) return 12;
+    if (possessionLower.includes('2 year') || possessionLower.includes('within 2')) return 24;
+    if (possessionLower.includes('launch')) return 36;
+    return 36;
+};
+
+const matchesBHK = (project: any, bhkFilters: string[]): boolean => {
+    if (bhkFilters.length === 0) return true;
+    const projectBHKs = project.configurations.map((config: any) => {
+        const bhkMatch = config.type.match(/(\d+)\s*BHK/i);
+        return bhkMatch ? `${bhkMatch[1]} BHK` : null;
+    }).filter(Boolean);
+    if (project.bhk) projectBHKs.push(project.bhk);
+    return projectBHKs.some((bhk: string) => bhkFilters.includes(bhk));
+};
+
+const matchesPropertyType = (project: any, typeFilters: string[]): boolean => {
+    if (typeFilters.length === 0) return true;
+    const projectTypes = project.configurations.map((config: any) => {
+        const words = config.type.split(' ');
+        return words[words.length - 1];
+    });
+    return projectTypes.some((type: string) => typeFilters.includes(type));
+};
+
+const matchesPossession = (project: any, possessionFilters: string[]): boolean => {
+    if (possessionFilters.length === 0) return true;
+    const projectPossessionMonths = getPossessionMonths(project.possession);
+    return possessionFilters.some(filter => {
+        switch (filter) {
+            case 'Ready to Move': return projectPossessionMonths === 0;
+            case 'Upto 1 Year': return projectPossessionMonths > 0 && projectPossessionMonths <= 12;
+            case 'Upto 2 Years': return projectPossessionMonths > 12 && projectPossessionMonths <= 24;
+            case '2+ Years': return projectPossessionMonths > 24;
+            default: return false;
+        }
+    });
+};
+
+// --- TAG FILTER DROPDOWN ---
 const TagFilterDropdown = ({
     label,
     options,
@@ -60,7 +164,7 @@ const TagFilterDropdown = ({
     const handleTagClick = (option: string) => {
         const isSortBy = label.toLowerCase().includes('sort by');
         const newSelected = isSortBy
-            ? [option] // Only one selection allowed for Sort By
+            ? [option]
             : selected.includes(option)
                 ? selected.filter((item: string) => item !== option)
                 : [...selected, option];
@@ -68,8 +172,7 @@ const TagFilterDropdown = ({
     };
 
     const clearSelection = () => {
-        const isSortBy = label.toLowerCase().includes('sort by');
-        onChange(isSortBy ? ['Relevance'] : []);
+        onChange(label.toLowerCase().includes('sort by') ? ['Relevance'] : []);
     };
 
     const getDisplayLabel = () => {
@@ -125,21 +228,15 @@ const TagFilterDropdown = ({
     );
 };
 
-// --- MODIFIED INTERACTIVE FILTER DROPDOWN COMPONENT (for Budget only) ---
-const InteractiveDropdown = ({
+// --- BUDGET DROPDOWN ---
+const BudgetDropdown = ({
     label,
-    options,
     selected,
     onChange,
-    type = 'checkbox',
-    onClear
 }: {
     label: string;
-    options: any[];
-    selected: any;
-    onChange: (value: any) => void;
-    type?: 'checkbox' | 'radio' | 'budget';
-    onClear?: () => void;
+    selected: { min: string; max: string };
+    onChange: (value: { min: string; max: string }) => void;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [minBudget, setMinBudget] = useState(selected.min || '');
@@ -159,12 +256,19 @@ const InteractiveDropdown = ({
     const handleBudgetApply = () => {
         onChange({ min: minBudget, max: maxBudget });
         setIsOpen(false);
-    }
+    };
+
+    const clearBudget = () => {
+        setMinBudget('');
+        setMaxBudget('');
+        onChange({ min: '', max: '' });
+        setIsOpen(false);
+    };
 
     const getDisplayLabel = () => {
         if (selected.min || selected.max) {
-            const min = selected.min ? `Min ${selected.min}` : '';
-            const max = selected.max ? `Max ${selected.max}` : '';
+            const min = selected.min ? `Min ${selected.min}L` : '';
+            const max = selected.max ? `Max ${selected.max}L` : '';
             return [min, max].filter(Boolean).join(' - ');
         }
         return label;
@@ -183,7 +287,6 @@ const InteractiveDropdown = ({
                 <span>{getDisplayLabel()}</span>
                 <ChevronDownIcon size={16} />
             </button>
-
             {isOpen && (
                 <div className="absolute top-full mt-2 w-72 bg-white rounded-lg shadow-2xl border border-gray-200 z-20">
                     <div className="p-4 max-h-80 overflow-y-auto">
@@ -211,7 +314,7 @@ const InteractiveDropdown = ({
                         </div>
                     </div>
                     <div className="flex justify-between items-center bg-gray-50 px-4 py-3 border-t border-gray-200">
-                        <button onClick={() => { onChange({min: '', max: ''}); setIsOpen(false); }} className="text-sm font-semibold text-blue-800 hover:underline">Clear</button>
+                        <button onClick={clearBudget} className="text-sm font-semibold text-blue-800 hover:underline">Clear</button>
                         <button onClick={handleBudgetApply} className="px-4 py-2 bg-blue-800 text-white text-sm font-bold rounded-lg hover:bg-blue-900 transition-colors">Done</button>
                     </div>
                 </div>
@@ -220,64 +323,51 @@ const InteractiveDropdown = ({
     );
 };
 
-
-// --- UTILITY FUNCTION TO PARSE PRICE STRINGS ---
-const parsePrice = (priceStr: string): number => {
-    if (!priceStr) return 0;
-    const value = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
-    if (priceStr.toLowerCase().includes('cr')) {
-        return value * 100; // Return value in Lacs
-    }
-    if (priceStr.toLowerCase().includes('lac')) {
-        return value;
-    }
-    return value; // Assume it's in Lacs if no unit
-};
-
-
-// --- EXISTING COMPONENTS (FlatCard, ScheduleForm) - No changes needed here ---
+// --- FLAT CARD ---
 const FlatCard = ({ flat }: { flat: any }) => (
     <div className="bg-white rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 group flex flex-col lg:flex-row relative">
-        {flat.bestOffer && (
+        {flat.keyFeatures?.includes('Best Offer Available') && (
             <div className="absolute top-4 right-4 bg-red-600 text-white text-xs font-semibold py-1 px-3 rounded-md z-10">
                 BEST OFFER
             </div>
         )}
         {flat.image && (
-            <div className="lg:w-2/5 relative overflow-hidden">
+            <Link to={`/project/${flat.id}/${flat.name.replace(/\s+/g, '-').toLowerCase()}`} className="lg:w-2/5 relative overflow-hidden">
                 <img src={flat.image} alt={flat.name} className="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute top-4 left-4 bg-blue-800 text-white text-xs font-semibold py-1 px-3 rounded-md">RERA</div>
                 <button className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 rounded-lg hover:bg-white transition-colors">
                     <HeartIcon size={20} className="text-gray-800" />
                 </button>
-            </div>
+            </Link>
         )}
         <div className="p-6 flex-grow flex flex-col justify-between">
             <div>
                 <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-xl font-bold text-gray-800">{flat.name}</h2>
+                    <Link to={`/project/${flat.id}/${flat.name.replace(/\s+/g, '-').toLowerCase()}`}>
+                        <h2 className="text-xl font-bold text-gray-800 hover:text-blue-800 transition-colors">{flat.name}</h2>
+                    </Link>
                 </div>
                 <p className="text-sm text-gray-500 mb-4">{flat.description}</p>
-                {flat.type && (
+                {flat.configurations && (
                     <div className="border-b border-gray-200 pb-4 mb-4">
                         <div className="flex justify-between items-center text-sm font-medium">
-                            <span className="text-gray-600">{flat.type} & {flat.type2}</span>
-                            <span className="text-gray-600">{flat.area}</span>
-                            <span className="text-blue-800 font-bold text-lg">{flat.price}</span>
+                            <span className="text-gray-600">{flat.configurations.map((c: any) => c.type).join(' & ')}</span>
+                            <span className="text-gray-600">{flat.configurations[0]?.area}</span>
+                            <span className="text-blue-800 font-bold text-lg">{flat.status}</span>
                         </div>
                     </div>
                 )}
                 <div className="grid grid-cols-2 gap-y-3 text-sm text-gray-700 mb-6">
                     <div className="flex items-center gap-2"><BuildingIcon size={18} className="text-gray-500" /> <span className="text-gray-500">Zero brokerage</span></div>
                     <div className="flex items-center gap-2"><MapPinIcon size={18} className="text-gray-500" /> <span className="text-gray-500">Possession: {flat.possession}</span></div>
-                    <div className="flex items-center gap-2"><TrainIcon size={18} className="text-gray-500" /> <span className="text-gray-500">{flat.metro}</span></div>
-                    <div className="flex items-center gap-2"><PlaneIcon size={18} className="text-gray-500" /> <span className="text-gray-500">{flat.airport}</span></div>
+                    <div className="flex items-center gap-2"><TrainIcon size={18} className="text-gray-500" /> <span className="text-gray-500">{flat.amenities?.find((a: any) => a.name.includes('Metro') || a.name.includes('Transportation'))?.name || 'N/A'}</span></div>
+                    <div className="flex items-center gap-2"><PlaneIcon size={18} className="text-gray-500" /> <span className="text-gray-500">{flat.amenities?.find((a: any) => a.name.includes('Airport'))?.name || 'N/A'}</span></div>
                 </div>
             </div>
             <div className="mt-auto">
-                {flat.builder && (
+                {flat.developer && (
                     <div className="flex items-center gap-4 text-sm mb-6">
-                        <p className="text-gray-600"><span className="font-semibold text-gray-800">By:</span> {flat.builder}</p>
+                        <p className="text-gray-600"><span className="font-semibold text-gray-800">By:</span> {flat.developer}</p>
                         <span className="text-gray-300">|</span>
                         <a href="#" className="flex items-center gap-2 text-blue-800 hover:underline font-semibold"><MessageCircleIcon size={16} /><span>Chat Now</span></a>
                     </div>
@@ -291,6 +381,7 @@ const FlatCard = ({ flat }: { flat: any }) => (
     </div>
 );
 
+// --- SCHEDULE FORM ---
 const ScheduleForm = () => (
     <div className="lg:col-span-1">
         <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 sticky top-32">
@@ -298,15 +389,15 @@ const ScheduleForm = () => (
                 <h3 className="text-lg font-bold text-gray-800">Schedule your free site visit</h3>
                 <p className="text-blue-800 font-semibold text-lg">TODAY</p>
             </div>
-            <form className="space-y-4">
+            <div className="space-y-4">
                 <input type="text" placeholder="Name" className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800" />
                 <input type="tel" placeholder="Mobile number" className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800" />
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                     <input type="checkbox" id="whatsapp-consent" className="rounded text-blue-800 focus:ring-blue-800" />
                     <label htmlFor="whatsapp-consent">I agree to be contacted by WhatsApp, SMS, Email</label>
                 </div>
-                <button type="submit" className="w-full bg-blue-800 text-white font-bold py-3 rounded-lg hover:bg-blue-900 transition-colors">Submit</button>
-            </form>
+                <button className="w-full bg-blue-800 text-white font-bold py-3 rounded-lg hover:bg-blue-900 transition-colors">Submit</button>
+            </div>
             <div className="mt-6 flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
                 <div className="w-12 h-12 flex items-center justify-center text-gray-500"><PhoneIcon size={24} /></div>
                 <div className="flex-1">
@@ -321,15 +412,28 @@ const ScheduleForm = () => (
     </div>
 );
 
-
 // --- MAIN PAGE COMPONENT ---
 export default function FilterResults() {
     const params = useParams();
     const filterSlug = params['*']?.split('/')[0] || 'all';
-    // @ts-ignore
-    const pageData = projectData[filterSlug] || projectData['all'];
 
-    const [filters, setFilters] = useState<typeof initialFilters>(initialFilters);
+    // Initialize filters based on filterSlug
+    const initialFiltersWithSlug = useMemo(() => {
+        if (filterSlug === 'all' || !navbarFilterMap[filterSlug]) {
+            return initialFilters;
+        }
+        return {
+            ...initialFilters,
+            ...navbarFilterMap[filterSlug]
+        };
+    }, [filterSlug]);
+
+    const [filters, setFilters] = useState<typeof initialFilters>(initialFiltersWithSlug);
+
+    // Update filters when filterSlug changes
+    useEffect(() => {
+        setFilters(initialFiltersWithSlug);
+    }, [filterSlug, initialFiltersWithSlug]);
 
     const handleFilterChange = (category: keyof typeof initialFilters, value: any) => {
         setFilters(prev => ({
@@ -342,47 +446,123 @@ export default function FilterResults() {
         setFilters(initialFilters);
     };
 
+    // Collect all unique projects from all categories
+    const allProjects = useMemo(() => {
+        const projectSet = new Map();
+        Object.keys(projectData).forEach(category => {
+            projectData[category].projects.forEach(project => {
+                const key = `${project.id}-${project.name}`;
+                projectSet.set(key, project);
+            });
+        });
+        return Array.from(projectSet.values());
+    }, []);
+
     const filteredAndSortedProjects = useMemo(() => {
-        let projects = [...pageData.projects];
+        // Start with all projects
+        let filteredProjects = [...allProjects];
 
-        // Filtering logic
-        projects = projects.filter(project => {
-            const { localities, bhk, budget, possession, propertyType, searchQuery, sortBy } = filters;
-
-            const lowerCaseQuery = searchQuery.toLowerCase();
-            const matchesSearch = !searchQuery ||
+        // Apply search filter first across all projects
+        if (filters.searchQuery) {
+            const lowerCaseQuery = filters.searchQuery.toLowerCase();
+            filteredProjects = filteredProjects.filter(project =>
                 project.name.toLowerCase().includes(lowerCaseQuery) ||
-                project.builder.toLowerCase().includes(lowerCaseQuery) ||
-                project.location.toLowerCase().includes(lowerCaseQuery);
+                project.developer.toLowerCase().includes(lowerCaseQuery) ||
+                project.description.toLowerCase().includes(lowerCaseQuery)
+            );
+        }
 
-            if (!matchesSearch) return false;
-            if (localities.length > 0 && !localities.includes(project.location)) return false;
-            if (bhk.length > 0 && !bhk.includes(project.bhk)) return false;
-            if (propertyType.length > 0 && !propertyType.includes(project.type)) return false;
-            if (possession.length > 0 && !possession.includes(project.possession)) return false;
+        // Apply other filters
+        filteredProjects = filteredProjects.filter(project => {
+            const { localities, bhk, budget, possession, propertyType } = filters;
 
-            const projectPrice = parsePrice(project.price);
-            if (budget.min && projectPrice < parseFloat(budget.min)) return false;
-            if (budget.max && projectPrice > parseFloat(budget.max)) return false;
+            // Locality filter
+            if (localities.length > 0) {
+                const matchesLocality = localities.some(loc =>
+                    project.description.toLowerCase().includes(loc.toLowerCase())
+                );
+                if (!matchesLocality) return false;
+            }
+
+            // BHK filter
+            if (!matchesBHK(project, bhk)) return false;
+
+            // Property Type filter
+            if (!matchesPropertyType(project, propertyType)) return false;
+
+            // Possession filter
+            if (!matchesPossession(project, possession)) return false;
+
+            // Budget filter
+            if (budget.min || budget.max) {
+                const minBudget = budget.min ? parseFloat(budget.min) : 0;
+                const maxBudget = budget.max ? parseFloat(budget.max) : Infinity;
+                const priceRanges = project.configurations.map((config: any) => getPriceRange(config.price));
+                const matchesBudget = priceRanges.some(range =>
+                    !(range.max < minBudget || range.min > maxBudget)
+                );
+                if (!matchesBudget) return false;
+            }
 
             return true;
         });
 
-        // Sorting logic
+        // Apply sorting
         const sortOption = filters.sortBy[0] || 'Relevance';
-        switch (sortOption) {
-            case 'Price: low to high':
-                projects.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
-                break;
-            case 'Price: high to low':
-                projects.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
-                break;
-            // Add other sorting logic for 'New Launch', 'Near possession' if data is available
+        if (sortOption !== 'Relevance') {
+            filteredProjects.sort((a, b) => {
+                switch (sortOption) {
+                    case 'Price: Low to High':
+                        const aMinPrices = a.configurations.map((c: any) => getPriceRange(c.price).min).filter((p: number) => p > 0);
+                        const bMinPrices = b.configurations.map((c: any) => getPriceRange(c.price).min).filter((p: number) => p > 0);
+                        const aMin = Math.min(...aMinPrices);
+                        const bMin = Math.min(...bMinPrices);
+                        return (isNaN(aMin) ? Infinity : aMin) - (isNaN(bMin) ? Infinity : bMin);
+                    case 'Price: High to Low':
+                        const aMaxPrices = a.configurations.map((c: any) => getPriceRange(c.price).max).filter((p: number) => p > 0);
+                        const bMaxPrices = b.configurations.map((c: any) => getPriceRange(c.price).max).filter((p: number) => p > 0);
+                        const aMax = Math.max(...aMaxPrices);
+                        const bMax = Math.max(...bMaxPrices);
+                        return (isNaN(bMax) ? 0 : bMax) - (isNaN(aMax) ? 0 : aMax);
+                    case 'New Launch':
+                        const aIsNew = a.possession.toLowerCase().includes('launch') ? 0 : 1;
+                        const bIsNew = b.possession.toLowerCase().includes('launch') ? 0 : 1;
+                        return aIsNew - bIsNew;
+                    case 'Near Possession':
+                        return getPossessionMonths(a.possession) - getPossessionMonths(b.possession);
+                    default:
+                        return 0;
+                }
+            });
         }
 
-        return projects;
+        return filteredProjects;
+    }, [allProjects, filters]);
 
-    }, [pageData.projects, filters]);
+    const pageTitle = useMemo(() => {
+        const hasActiveFilters =
+            filters.searchQuery ||
+            filters.localities.length > 0 ||
+            filters.bhk.length > 0 ||
+            (filters.budget.min || filters.budget.max) ||
+            filters.possession.length > 0 ||
+            filters.propertyType.length > 0 ||
+            filters.sortBy[0] !== 'Relevance';
+        const activeFilters: string[] = [];
+        if (filters.searchQuery) activeFilters.push(`"${filters.searchQuery}"`);
+        if (filters.localities.length > 0) activeFilters.push(`in ${filters.localities.join(', ')}`);
+        if (filters.bhk.length > 0) activeFilters.push(`${filters.bhk.join(', ')}`);
+        if (filters.budget.min || filters.budget.max) {
+            const budgetStr = [filters.budget.min ? `Min ${filters.budget.min}L` : '', filters.budget.max ? `Max ${filters.budget.max}L` : ''].filter(Boolean).join(' - ');
+            activeFilters.push(budgetStr);
+        }
+        if (filters.possession.length > 0) activeFilters.push(filters.possession.join(', '));
+        if (filters.propertyType.length > 0) activeFilters.push(filters.propertyType.join(', '));
+        const pageData = projectData[filterSlug] || projectData['all'];
+        return hasActiveFilters
+            ? `Properties matching ${activeFilters.join(', ')}`
+            : `${pageData.title} in Ahmedabad`;
+    }, [filters, filterSlug]);
 
     return (
         <>
@@ -395,12 +575,9 @@ export default function FilterResults() {
                 <main className="pt-32 pb-8">
                     <div className="container mx-auto px-4 lg:px-8">
                         <h1 className="text-3xl font-bold text-gray-800 mb-6">
-                            {pageData.title} in Ahmedabad ({filteredAndSortedProjects.length} results)
+                            {pageTitle} ({filteredAndSortedProjects.length} results)
                         </h1>
-
-                        {/* --- DYNAMIC FILTER BAR --- */}
                         <div className="bg-white py-4 px-6 mb-8 shadow-sm rounded-lg border border-gray-200 flex flex-wrap gap-3 justify-start items-center">
-                            {/* NEW: Search Input Field */}
                             <div className="relative flex-grow min-w-[200px]">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                     <SearchIcon size={20} className="text-gray-400" />
@@ -413,9 +590,8 @@ export default function FilterResults() {
                                     className="w-full px-4 pl-10 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-800"
                                 />
                             </div>
-
                             <TagFilterDropdown
-                                label="Popular localities"
+                                label="Popular Localities"
                                 options={filterOptions.localities}
                                 selected={filters.localities}
                                 onChange={(value) => handleFilterChange('localities', value)}
@@ -426,12 +602,10 @@ export default function FilterResults() {
                                 selected={filters.bhk}
                                 onChange={(value) => handleFilterChange('bhk', value)}
                             />
-                            <InteractiveDropdown
+                            <BudgetDropdown
                                 label="Budget"
-                                options={[]}
                                 selected={filters.budget}
                                 onChange={(value) => handleFilterChange('budget', value)}
-                                type="budget"
                             />
                             <TagFilterDropdown
                                 label="Possession"
@@ -456,7 +630,6 @@ export default function FilterResults() {
                                 Clear All
                             </button>
                         </div>
-
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div className="lg:col-span-2 space-y-6">
                                 {filteredAndSortedProjects.length === 0 ? (
@@ -466,7 +639,7 @@ export default function FilterResults() {
                                     </div>
                                 ) : (
                                     filteredAndSortedProjects.map((project: any) => (
-                                        <FlatCard key={project.id} flat={project} />
+                                        <FlatCard key={`${project.id}-${project.name}`} flat={project} />
                                     ))
                                 )}
                             </div>
