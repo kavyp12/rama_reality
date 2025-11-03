@@ -2,12 +2,12 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { projectData } from '../data/projectsData';
-import Navbar from '../components/Navbar';
+import Navbar from './Navbar';
 import { 
     CheckCircle, ChevronLeft, ChevronRight, BedDouble, Bath, ParkingCircle, Car,
     Home, Building, Calendar, Check, Box, List, Play, Utensils, Film, Compass, Droplet,
     Waves, Trash, Truck, Shield, TreePine, CloudRain, User, MapPin, Phone, Download,
-    Heart, Share, Eye, Star
+    Heart, Share, Eye, Star, Bus, Hospital, School, ShoppingCart
 } from 'lucide-react';
 
 // A helper component to map amenity names to icons
@@ -25,13 +25,30 @@ const AmenityIcon = ({ name, ...props }: { name: string, [key: string]: any }) =
         case 'trash': return <Trash {...props} />;
         case 'truck': return <Truck {...props} />;
         case 'shield': return <Shield {...props} />;
+        case 'bus': return <Bus {...props} />;
+        case 'plane': return <i className="fas fa-plane" {...props}></i>;
         default: return <Box {...props} />;
+    }
+};
+
+// Helper component for "Nearby" icons
+const NearbyIcon = ({ name, ...props }: { name: string, [key: string]: any }) => {
+    switch (name.toLowerCase()) {
+        case 'bus': return <Bus {...props} />;
+        case 'hospital': return <Hospital {...props} />;
+        case 'school': return <School {...props} />;
+        case 'shopping': return <ShoppingCart {...props} />;
+        default: return <MapPin {...props} />;
     }
 };
 
 const ProjectDetails = () => {
     const { id } = useParams<{ id: string }>();
     const overviewRef = useRef<HTMLDivElement>(null);
+    const floorplanRef = useRef<HTMLDivElement>(null);
+    const projectLocationRef = useRef<HTMLDivElement>(null);
+    const nearbyRef = useRef<HTMLDivElement>(null);
+    const similarPropertiesRef = useRef<HTMLDivElement>(null);
 
     const project = useMemo(() => {
         const allProjects = Object.values(projectData).flatMap(category => category.projects);
@@ -61,14 +78,22 @@ const ProjectDetails = () => {
     const handleNextImage = () => {
         if (!project || !project.heroImages) return;
         const currentIndex = project.heroImages.indexOf(selectedImage);
-        const nextIndex = (currentIndex + 1) % project.heroImages.length;
+        const nextIndex = (currentIndex +1) % project.heroImages.length;
         setSelectedImage(project.heroImages[nextIndex]);
     };
 
     const handleTabClick = (tab: string) => {
         setActiveTab(tab);
-        if (tab === 'Overview') {
-            overviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (tab === 'Overview' && overviewRef.current) {
+            overviewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (tab === 'Floor Plan' && floorplanRef.current) {
+            floorplanRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (tab === 'Project Location' && projectLocationRef.current) {
+            projectLocationRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (tab === "What's Nearby?" && nearbyRef.current) {
+            nearbyRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (tab === 'Similar Properties' && similarPropertiesRef.current) {
+            similarPropertiesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     };
 
@@ -92,17 +117,23 @@ const ProjectDetails = () => {
     }
 
     const currentFloorPlan = project.floorPlans?.[activeFloorPlan];
-    const tabs = ['Floor Plan', 'Overview', 'Gallery', 'Video', 'Location'];
+    const tabs = ['Floor Plan', 'Overview', 'Gallery', 'Video', 'Project Location', "What's Nearby?", 'Similar Properties'];
 
     return (
         <>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
                 * { font-family: 'Inter', sans-serif; }
-                
                 .tab-button.active {
                     color: #1e40af;
                     border-bottom: 2px solid #1e40af;
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in {
+                    animation: fadeIn 0.5s ease-in-out;
                 }
             `}</style>
             
@@ -122,7 +153,6 @@ const ProjectDetails = () => {
                         {/* Professional Image Gallery */}
                         <div className="mb-12">
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-                                {/* Main Image */}
                                 <div className="lg:col-span-3 relative h-[500px] group rounded-2xl overflow-hidden shadow-2xl">
                                     <img 
                                         src={selectedImage} 
@@ -130,8 +160,6 @@ const ProjectDetails = () => {
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
-                                    
-                                    {/* Navigation buttons */}
                                     <button 
                                         onClick={handlePrevImage} 
                                         className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
@@ -144,14 +172,10 @@ const ProjectDetails = () => {
                                     >
                                         <ChevronRight size={20} />
                                     </button>
-                                    
-                                    {/* Image counter */}
                                     <div className="absolute bottom-6 right-6 bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium">
                                         {project.heroImages?.indexOf(selectedImage) + 1} / {project.heroImages?.length}
                                     </div>
                                 </div>
-                                
-                                {/* Thumbnail Images */}
                                 <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
                                     {project.heroImages?.slice(1, 5).map((img, index) => (
                                         <div key={index} className="h-[120px] lg:h-[118px] relative group rounded-xl overflow-hidden shadow-lg">
@@ -172,7 +196,6 @@ const ProjectDetails = () => {
                         <div className="bg-gradient-to-r from-slate-50 to-gray-50 -mx-4 lg:-mx-8 px-4 lg:px-8 py-12 mb-16">
                             <div className="max-w-7xl mx-auto">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-                                    {/* Project Info - Left Side */}
                                     <div className="lg:col-span-2">
                                         <div className="flex items-center gap-4 mb-4">
                                             <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">{project.name}</h1>
@@ -183,11 +206,9 @@ const ProjectDetails = () => {
                                                 </span>
                                             </div>
                                         </div>
-                                        
                                         <p className="text-lg text-gray-700 mb-6 leading-relaxed max-w-4xl">
                                             {project.description}
                                         </p>
-                                        
                                         <div className="flex flex-wrap items-center gap-6 text-gray-600">
                                             <div className="flex items-center gap-2">
                                                 <Building className="h-5 w-5 text-gray-500" />
@@ -207,8 +228,6 @@ const ProjectDetails = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    {/* Price & CTA - Right Side */}
                                     <div className="lg:col-span-1">
                                         <div className="text-right lg:text-left">
                                             <div className="mb-6">
@@ -216,7 +235,6 @@ const ProjectDetails = () => {
                                                 <p className="text-3xl lg:text-4xl font-bold text-gray-900 mb-1">{project.status}</p>
                                                 <p className="text-sm text-gray-600">+ All Inclusive</p>
                                             </div>
-                                            
                                             <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
                                                 <button className="bg-blue-600 text-white font-semibold py-4 px-8 rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl">
                                                     <Phone className="inline w-5 h-5 mr-2" />
@@ -227,7 +245,6 @@ const ProjectDetails = () => {
                                                     Download Brochure
                                                 </button>
                                             </div>
-                                            
                                             <div className="flex justify-center lg:justify-start items-center gap-4 mt-6">
                                                 <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
                                                     <Heart className="h-5 w-5" />
@@ -244,19 +261,18 @@ const ProjectDetails = () => {
                                 </div>
                             </div>
                         </div>
-                    
 
                         {/* Main Content Layout */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div className="lg:col-span-2">
                                 {/* Tab Navigation */}
-                                <div className="border-b border-gray-200 mb-6">
-                                    <nav className="flex space-x-8">
+                                <div className="border-b border-gray-200 mb-6 sticky top-16 bg-white z-10">
+                                    <nav className="flex space-x-4 overflow-x-auto">
                                         {tabs.map(tab => (
                                             <button
                                                 key={tab}
                                                 onClick={() => handleTabClick(tab)}
-                                                className={`tab-button py-4 px-2 font-medium text-sm transition-colors ${
+                                                className={`tab-button py-4 px-2 font-medium text-sm whitespace-nowrap transition-colors ${
                                                     activeTab === tab 
                                                     ? 'active' 
                                                     : 'text-gray-500 hover:text-gray-700'
@@ -269,7 +285,7 @@ const ProjectDetails = () => {
                                 </div>
 
                                 {/* Floor Plan Section */}
-                                <div className="mb-12">
+                                <div ref={floorplanRef} className="mb-12 pt-4">
                                     <h2 className="text-2xl font-semibold mb-6">Floor Plans</h2>
                                     {project.floorPlans && project.floorPlans.length > 0 ? (
                                         <>
@@ -297,8 +313,6 @@ const ProjectDetails = () => {
                                                             className="w-full max-w-2xl mx-auto rounded"
                                                         />
                                                     </div>
-                                                    
-                                                    {/* Floor Plan Details */}
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg">
                                                         <div>
                                                             <p className="text-2xl font-bold mb-2">{currentFloorPlan.price}</p>
@@ -335,7 +349,7 @@ const ProjectDetails = () => {
                                 </div>
 
                                 {/* Overview Section */}
-                                <div ref={overviewRef}>
+                                <div ref={overviewRef} className="mb-12 pt-4">
                                     <h2 className="text-2xl font-semibold mb-6">Project Overview</h2>
                                     {project.overview ? (
                                         <div className="space-y-8">
@@ -419,6 +433,79 @@ const ProjectDetails = () => {
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {/* Project Location */}
+                                            {project.locationData && (
+                                                <div ref={projectLocationRef}>
+                                                    <h3 className="text-lg font-semibold mb-4">Project Location</h3>
+                                                    <h4 className="text-md font-semibold mb-4">{project.locationData.address}</h4>
+                                                    <div className="relative rounded-lg overflow-hidden">
+                                                        <img src={project.locationData.mapImage} alt="Project location map" className="w-full h-auto object-cover"/>
+                                                        <div className="absolute top-4 left-4 bg-white p-4 rounded-lg shadow-md">
+                                                            <p className="font-bold text-gray-800">{project.locationData.coordinates}</p>
+                                                            <p className="text-sm text-gray-600">{project.locationData.address}</p>
+                                                            <a href={project.locationData.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold text-sm mt-2 inline-block">
+                                                                View on Google Maps
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* What's Nearby? */}
+                                            {project.nearby && (
+                                                <div ref={nearbyRef}>
+                                                    <h3 className="text-lg font-semibold mb-4">What's Nearby?</h3>
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                        {project.nearby.map((item, index) => (
+                                                            <div key={index} className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+                                                                <div className="mr-4 text-blue-600">
+                                                                    <NearbyIcon name={item.icon} size={28} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-800">{item.name}</p>
+                                                                    <p className="text-sm text-gray-500">{item.distance}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Similar Properties */}
+                                            {project.similarProjects && (
+                                                <div ref={similarPropertiesRef}>
+                                                    <h3 className="text-lg font-semibold mb-4">Similar Properties</h3>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  {project.similarProjects.map((similar, index) => (
+    <div 
+      key={index} 
+      className="border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden bg-white"
+    >
+      <img 
+        src={similar.image} 
+        alt={similar.name} 
+        className="w-full h-48 object-cover"
+      />
+      <div className="p-4">
+        <h4 className="text-lg font-bold text-gray-900 mb-1">{similar.name}</h4>
+        <p className="text-sm text-gray-500 mb-3">{similar.developer}</p>
+        <div className="text-sm space-y-1 text-gray-700 mb-4">
+          <p><strong>Price:</strong> {similar.price}</p>
+          <p><strong>Configuration:</strong> {similar.configuration}</p>
+          <p><strong>Area:</strong> {similar.area}</p>
+          <p><strong>Possession:</strong> {similar.possession}</p>
+        </div>
+        <button className="w-full bg-gray-800 text-white font-semibold py-2 rounded-lg hover:bg-gray-900 transition-colors">
+          View Details
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
+
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="text-center py-8 text-gray-500">
@@ -433,7 +520,6 @@ const ProjectDetails = () => {
                                 <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sticky top-24">
                                     <h3 className="text-xl font-semibold text-gray-900 mb-1">Get Details</h3>
                                     <p className="text-gray-600 text-sm mb-6">Connect with our property expert</p>
-                                    
                                     <form className="space-y-4">
                                         <input 
                                             type="text" 
@@ -468,7 +554,6 @@ const ProjectDetails = () => {
                                             Get Exclusive Offer
                                         </button>
                                     </form>
-                                    
                                     <div className="flex items-center gap-3 mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                                             <User size={18} className="text-blue-600"/>
@@ -478,7 +563,6 @@ const ProjectDetails = () => {
                                             <p className="text-xs text-gray-600">Get callback within 5 minutes</p>
                                         </div>
                                     </div>
-                                    
                                     <div className="text-center mt-4">
                                         <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
                                             <Shield size={12} />

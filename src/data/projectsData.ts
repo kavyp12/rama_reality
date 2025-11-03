@@ -746,6 +746,7 @@ export type Amenity = {
   icon: string;
 };
 
+// Main data structure for all projects
 export const projectData = {
   'all': {
     title: 'All Properties',
@@ -767,7 +768,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "https://images.unsplash.com/photo-1610013583342-30126b963332?q=80&w=2670&auto=format&fit=crop",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "230 - 280 Sq-yrd",
             price: "₹1.16 Cr - ₹1.41 Cr"
@@ -786,8 +787,8 @@ export const projectData = {
           totalArea: "Not Specified",
           possessionDate: "May 2030",
           projectStage: "Under Construction",
-          totalUnits: "Not Specified",
-          launchDate: "Not Specified"
+          totalUnits: "150",
+          launchDate: "Jan 2024"
         },
         towerDetails: [
           { tower: "A", bedroom: "3 BHK Flat", unitsOfFloor: 4, lift: 2, storey: "G+15" },
@@ -800,15 +801,61 @@ export const projectData = {
         ],
         amenities: [
           { name: "Jogging Track", icon: "run" },
-          { name: "Public Transportation", icon: "bus" },
-          { name: "Proximity to Airport", icon: "plane" },
+          { name: "Transportation", icon: "bus" },
+          { name: "Airport", icon: "plane" },
           { name: "Swimming Pool", icon: "waves" }
         ] as Amenity[],
+        // NEW SECTIONS ADDED HERE
+        locationData: {
+          coordinates: "23°01'47.6\"N 72°29'10.0\"E",
+          address: "2FHP+XC5 Ahmedabad, Gujarat",
+          googleMapsUrl: "https://maps.app.goo.gl/K8zM5QzD7J9R8P6aA",
+          mapImage: "/location_image.jpg"
+        },
+        nearby: [
+            { category: "Transportation", name: "Public Transportation", distance: "0.5 km", icon: "bus" },
+            { category: "Hospital", name: "Saraswati Hospital", distance: "1.5 km", icon: "hospital" },
+            { category: "Hospital", name: "Shalby Hospital", distance: "2 km", icon: "hospital" },
+            { category: "Shopping", name: "Mall/Market", distance: "1.3 km", icon: "shopping" },
+            { category: "Hospital", name: "EPIC Hospital", distance: "2 km", icon: "hospital" },
+            { category: "School", name: "Zebra School", distance: "2.8 km", icon: "school" }
+        ],
+        similarProjects: [
+            {
+                name: "Oeuvre 3",
+                developer: "by Madhav Associate",
+                location: "Ambli, Ahmedabad",
+                price: "Price on Request",
+                configuration: "4 BHK, 5 BHK",
+                area: "4651 - 5887 Sq-yrd",
+                possession: "December 2027",
+                image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=2574&auto=format&fit=crop"
+            },
+            {
+                name: "Tranquil",
+                developer: "by Maruti Inspiring Realty",
+                location: "Ambli, Ahmedabad",
+                price: "Price On Request",
+                configuration: "4 BHK",
+                area: "4535 - 5000 Sq-ft",
+                possession: "September 2024",
+                image: "https://images.unsplash.com/photo-1605276374104-5de67d608240?q=80&w=2670&auto=format&fit=crop"
+            },
+            {
+                name: "Palak Elina",
+                developer: "by Palak Group",
+                location: "Ambli, Ahmedabad",
+                price: "₹4.68 Cr - ₹4.91 Cr",
+                configuration: "5 BHK",
+                area: "6000 - 6300 Sq-ft",
+                possession: "June 2019",
+                image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2670&auto=format&fit=crop"
+            }
+        ],
+        // --- Legacy fields (can be removed if not used elsewhere)
         image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2670&auto=format&fit=crop",
         images: [
           "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2670&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2670&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2670&auto=format&fit=crop"
         ],
         configurations: [
           { type: "3 BHK Flat", area: "230 - 280 Sq-yrd", price: "₹1.16 Cr - ₹1.41 Cr" },
@@ -819,6 +866,7 @@ export const projectData = {
         bhk: "3 BHK",
         possession: "May 2030"
       },
+      
       {
         id: 2,
         name: "Venus Pashmina",
@@ -836,7 +884,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "2 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 2, baths: 2, balconies: 1, parking: 1 },
             area: "850 - 950 Sq.Ft",
             price: "₹85 Lac - ₹95 Lac"
@@ -903,7 +951,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK House",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1500 - 1650 Sq.Ft",
             price: "₹80 Lac - ₹90 Lac"
@@ -965,14 +1013,14 @@ export const projectData = {
         floorPlans: [
           {
             type: "4 BHK Villa",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 4, baths: 4, balconies: 2, parking: 3 },
             area: "2800 - 3200 Sq.Ft",
             price: "₹2.5 Cr - ₹2.8 Cr"
           },
           {
             type: "5 BHK Villa",
-            image: "https://images.unsplash.com/photo-1542882284-8193c7449ce8?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_lower2-1536x619.jpg",
             details: { beds: 5, baths: 5, balconies: 3, parking: 3 },
             area: "3500 Sq.Ft",
             price: "₹3.2 Cr"
@@ -1029,7 +1077,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1400 - 1600 Sq.Ft",
             price: "₹75 Lac - ₹85 Lac"
@@ -1101,7 +1149,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "2 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 2, baths: 2, balconies: 1, parking: 1 },
             area: "850 - 950 Sq.Ft",
             price: "₹85 Lac - ₹95 Lac"
@@ -1173,7 +1221,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK House",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1500 - 1650 Sq.Ft",
             price: "₹80 Lac - ₹90 Lac"
@@ -1235,7 +1283,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1400 - 1600 Sq.Ft",
             price: "₹75 Lac - ₹85 Lac"
@@ -1307,7 +1355,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "4 BHK Villa",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 4, baths: 4, balconies: 2, parking: 3 },
             area: "2800 - 3200 Sq.Ft",
             price: "₹2.5 Cr - ₹2.8 Cr"
@@ -1376,7 +1424,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "230 - 280 Sq-yrd",
             price: "₹1.16 Cr - ₹1.41 Cr"
@@ -1454,7 +1502,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "230 - 280 Sq-yrd",
             price: "₹1.16 Cr - ₹1.41 Cr"
@@ -1523,7 +1571,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "2 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 2, baths: 2, balconies: 1, parking: 1 },
             area: "850 - 950 Sq.Ft",
             price: "₹85 Lac - ₹95 Lac"
@@ -1590,7 +1638,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1400 - 1600 Sq.Ft",
             price: "₹75 Lac - ₹85 Lac"
@@ -1662,7 +1710,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK House",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1500 - 1650 Sq.Ft",
             price: "₹80 Lac - ₹90 Lac"
@@ -1729,7 +1777,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "4 BHK Villa",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 4, baths: 4, balconies: 2, parking: 3 },
             area: "2800 - 3200 Sq.Ft",
             price: "₹2.5 Cr - ₹2.8 Cr"
@@ -1798,7 +1846,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK House",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1500 - 1650 Sq.Ft",
             price: "₹80 Lac - ₹90 Lac"
@@ -1881,7 +1929,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "2 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 2, baths: 2, balconies: 1, parking: 1 },
             area: "850 - 950 Sq.Ft",
             price: "₹85 Lac - ₹95 Lac"
@@ -1948,7 +1996,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK House",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1500 - 1650 Sq.Ft",
             price: "₹80 Lac - ₹90 Lac"
@@ -2010,7 +2058,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "1400 - 1600 Sq.Ft",
             price: "₹75 Lac - ₹85 Lac"          },
@@ -2081,7 +2129,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "3 BHK Flat",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 3, baths: 3, balconies: 1, parking: 2 },
             area: "230 - 280 Sq-yrd",
             price: "₹1.16 Cr - ₹1.41 Cr"
@@ -2155,7 +2203,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "4 BHK Villa",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 4, baths: 4, balconies: 2, parking: 3 },
             area: "2800 - 3200 Sq.Ft",
             price: "₹2.5 Cr - ₹2.8 Cr"
@@ -2224,7 +2272,7 @@ export const projectData = {
         floorPlans: [
           {
             type: "4 BHK Villa",
-            image: "https://images.unsplash.com/photo-1611575339428-6972d2799a22?q=80&w=2670&auto=format&fit=crop",
+            image: "/C-Duplex_upper-1536x619.jpg",
             details: { beds: 4, baths: 4, balconies: 2, parking: 3 },
             area: "2800 - 3200 Sq.Ft",
             price: "₹2.5 Cr - ₹2.8 Cr"

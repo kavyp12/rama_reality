@@ -2,7 +2,11 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link } from "react-router-dom";
 import { projectData } from '../../data/projectsData';
 import Navbar from '../../components/Navbar';
-import { HeartIcon, ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, PhoneIcon, MessageCircleIcon, XIcon, SearchIcon } from 'lucide-react';
+import { 
+    HeartIcon, ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, 
+    PhoneIcon, MessageCircleIcon, XIcon, SearchIcon, CheckCircleIcon, 
+    BedIcon, BathIcon, HomeIcon, MailIcon 
+} from 'lucide-react';
 
 // --- FILTER DATA CONSTANTS ---
 const filterOptions = {
@@ -192,7 +196,7 @@ const TagFilterDropdown = ({
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`px-4 py-3 rounded-lg flex items-center gap-1 border transition-colors ${
+                className={`px-4 py-3 rounded-lg flex items-center gap-1 border transition-colors text-sm ${
                     isActive ? 'bg-blue-100 border-blue-800 text-blue-800' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
                 }`}
             >
@@ -214,7 +218,7 @@ const TagFilterDropdown = ({
                                     }
                                 `}
                             >
-                                {option} <span className="text-xs">+</span>
+                                {option}
                             </button>
                         ))}
                     </div>
@@ -323,63 +327,117 @@ const BudgetDropdown = ({
     );
 };
 
-// --- FLAT CARD ---
-const FlatCard = ({ flat }: { flat: any }) => (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 group flex flex-col lg:flex-row relative">
-        {flat.keyFeatures?.includes('Best Offer Available') && (
-            <div className="absolute top-4 right-4 bg-red-600 text-white text-xs font-semibold py-1 px-3 rounded-md z-10">
-                BEST OFFER
-            </div>
-        )}
-        {flat.image && (
-            <Link to={`/project/${flat.id}/${flat.name.replace(/\s+/g, '-').toLowerCase()}`} className="lg:w-2/5 relative overflow-hidden">
-                <img src={flat.image} alt={flat.name} className="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute top-4 left-4 bg-blue-800 text-white text-xs font-semibold py-1 px-3 rounded-md">RERA</div>
-                <button className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 rounded-lg hover:bg-white transition-colors">
+// --- FLAT CARD (UPDATED: Same Height + Developer Name) ---
+const FlatCard = ({ flat }: { flat: any }) => {
+    const firstConfig = flat.configurations?.[0] || {};
+    const bhkMatch = firstConfig.type?.match(/(\d+)\s*BHK/i);
+    const bedCount = bhkMatch ? bhkMatch[1] : (flat.bhk ? flat.bhk.split(' ')[0] : 'N/A');
+    const propertyType = firstConfig.type?.split(' ').pop() || 'Property';
+
+    return (
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col sm:flex-row h-full">
+            {/* Image Section */}
+            <div className="sm:w-2/5 relative h-64 sm:h-full">
+                <Link to={`/project/${flat.id}/${flat.name.replace(/\s+/g, '-').toLowerCase()}`} className="block h-full">
+                    <img 
+                        src={flat.image} 
+                        alt={flat.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
+                </Link>
+                
+                {/* Verified Badge */}
+                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-blue-700 text-xs font-semibold py-1.5 px-3 rounded-md flex items-center gap-1">
+                    <CheckCircleIcon size={14} className="text-blue-700" />
+                    Verified
+                </div>
+                
+                {/* Heart Icon */}
+                <button className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-2 rounded-lg hover:bg-white transition-colors">
                     <HeartIcon size={20} className="text-gray-800" />
                 </button>
-            </Link>
-        )}
-        <div className="p-6 flex-grow flex flex-col justify-between">
-            <div>
-                <div className="flex justify-between items-start mb-2">
-                    <Link to={`/project/${flat.id}/${flat.name.replace(/\s+/g, '-').toLowerCase()}`}>
-                        <h2 className="text-xl font-bold text-gray-800 hover:text-blue-800 transition-colors">{flat.name}</h2>
-                    </Link>
-                </div>
-                <p className="text-sm text-gray-500 mb-4">{flat.description}</p>
-                {flat.configurations && (
-                    <div className="border-b border-gray-200 pb-4 mb-4">
-                        <div className="flex justify-between items-center text-sm font-medium">
-                            <span className="text-gray-600">{flat.configurations.map((c: any) => c.type).join(' & ')}</span>
-                            <span className="text-gray-600">{flat.configurations[0]?.area}</span>
-                            <span className="text-blue-800 font-bold text-lg">{flat.status}</span>
-                        </div>
-                    </div>
-                )}
-                <div className="grid grid-cols-2 gap-y-3 text-sm text-gray-700 mb-6">
-                    <div className="flex items-center gap-2"><BuildingIcon size={18} className="text-gray-500" /> <span className="text-gray-500">Zero brokerage</span></div>
-                    <div className="flex items-center gap-2"><MapPinIcon size={18} className="text-gray-500" /> <span className="text-gray-500">Possession: {flat.possession}</span></div>
-                    <div className="flex items-center gap-2"><TrainIcon size={18} className="text-gray-500" /> <span className="text-gray-500">{flat.amenities?.find((a: any) => a.name.includes('Metro') || a.name.includes('Transportation'))?.name || 'N/A'}</span></div>
-                    <div className="flex items-center gap-2"><PlaneIcon size={18} className="text-gray-500" /> <span className="text-gray-500">{flat.amenities?.find((a: any) => a.name.includes('Airport'))?.name || 'N/A'}</span></div>
+
+                {/* Image Count */}
+                <div className="absolute bottom-3 left-3 bg-black/50 text-white text-xs font-medium py-1 px-2.5 rounded-md">
+                    1 / 10
                 </div>
             </div>
-            <div className="mt-auto">
-                {flat.developer && (
-                    <div className="flex items-center gap-4 text-sm mb-6">
-                        <p className="text-gray-600"><span className="font-semibold text-gray-800">By:</span> {flat.developer}</p>
-                        <span className="text-gray-300">|</span>
-                        <a href="#" className="flex items-center gap-2 text-blue-800 hover:underline font-semibold"><MessageCircleIcon size={16} /><span>Chat Now</span></a>
+
+            {/* Details Section */}
+            <div className="sm:w-3/5 p-5 flex flex-col justify-between h-full min-h-[320px] sm:min-h-0">
+                {/* Premium Badge */}
+                {flat.keyFeatures?.includes('Best Offer Available') && (
+                    <div className="absolute top-5 right-5 bg-orange-100 text-orange-600 text-xs font-bold py-1 px-3 rounded-full">
+                        PREMIUM
                     </div>
                 )}
-                <div className="flex items-center gap-4">
-                    <button className="flex-1 border border-blue-800 text-blue-800 font-bold py-3 px-6 rounded-lg hover:bg-blue-800 hover:text-white transition-colors">Brochure</button>
-                    <button className="flex-1 bg-blue-800 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-900 transition-colors">Get Offer</button>
+
+                <div className="flex-1">
+                    {/* Price */}
+                    <div className="mb-2">
+                        <span className="text-2xl font-bold text-gray-900">{firstConfig.price || 'Price on Request'}</span>
+                        <span className="text-lg text-gray-600 ml-2">{flat.status || ''}</span>
+                    </div>
+
+                    {/* Property Type */}
+                    <p className="text-base font-semibold text-gray-800 mb-3">{propertyType}</p>
+
+                    {/* Specs */}
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                        <div className="flex items-center gap-1.5">
+                            <BedIcon size={18} className="text-gray-500" />
+                            <span>{bedCount} bed</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <BathIcon size={18} className="text-gray-500" />
+                            <span>2 baths</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <HomeIcon size={18} className="text-gray-500" />
+                            <span>{firstConfig.area || 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    {/* Title */}
+                    <h2 className="text-lg font-bold text-gray-800 hover:text-blue-800 transition-colors mb-2">
+                        <Link to={`/project/${flat.id}/${flat.name.replace(/\s+/g, '-').toLowerCase()}`}>
+                            {flat.name}
+                        </Link>
+                    </h2>
+
+                    {/* Location */}
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                        <MapPinIcon size={16} />
+                        <span className="truncate">{flat.description}</span>
+                    </div>
+                </div>
+
+                {/* Bottom Bar: Contact + Developer */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-2">
+                        <button className="p-2.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-blue-800 transition-colors">
+                            <MailIcon size={20} />
+                            <span className="sr-only">Email</span>
+                        </button>
+                        <button className="p-2.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-blue-800 transition-colors">
+                            <PhoneIcon size={20} />
+                            <span className="sr-only">Call</span>
+                        </button>
+                        <button className="p-2.5 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-colors">
+                            <MessageCircleIcon size={20} />
+                            <span className="sr-only">WhatsApp</span>
+                        </button>
+                    </div>
+
+                    {/* DEVELOPER NAME */}
+                    <div className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                        {flat.developer}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 // --- SCHEDULE FORM ---
 const ScheduleForm = () => (
@@ -417,7 +475,6 @@ export default function FilterResults() {
     const params = useParams();
     const filterSlug = params['*']?.split('/')[0] || 'all';
 
-    // Initialize filters based on filterSlug
     const initialFiltersWithSlug = useMemo(() => {
         if (filterSlug === 'all' || !navbarFilterMap[filterSlug]) {
             return initialFilters;
@@ -430,7 +487,6 @@ export default function FilterResults() {
 
     const [filters, setFilters] = useState<typeof initialFilters>(initialFiltersWithSlug);
 
-    // Update filters when filterSlug changes
     useEffect(() => {
         setFilters(initialFiltersWithSlug);
     }, [filterSlug, initialFiltersWithSlug]);
@@ -446,7 +502,6 @@ export default function FilterResults() {
         setFilters(initialFilters);
     };
 
-    // Collect all unique projects from all categories
     const allProjects = useMemo(() => {
         const projectSet = new Map();
         Object.keys(projectData).forEach(category => {
@@ -459,10 +514,8 @@ export default function FilterResults() {
     }, []);
 
     const filteredAndSortedProjects = useMemo(() => {
-        // Start with all projects
         let filteredProjects = [...allProjects];
 
-        // Apply search filter first across all projects
         if (filters.searchQuery) {
             const lowerCaseQuery = filters.searchQuery.toLowerCase();
             filteredProjects = filteredProjects.filter(project =>
@@ -472,11 +525,9 @@ export default function FilterResults() {
             );
         }
 
-        // Apply other filters
         filteredProjects = filteredProjects.filter(project => {
             const { localities, bhk, budget, possession, propertyType } = filters;
 
-            // Locality filter
             if (localities.length > 0) {
                 const matchesLocality = localities.some(loc =>
                     project.description.toLowerCase().includes(loc.toLowerCase())
@@ -484,16 +535,10 @@ export default function FilterResults() {
                 if (!matchesLocality) return false;
             }
 
-            // BHK filter
             if (!matchesBHK(project, bhk)) return false;
-
-            // Property Type filter
             if (!matchesPropertyType(project, propertyType)) return false;
-
-            // Possession filter
             if (!matchesPossession(project, possession)) return false;
 
-            // Budget filter
             if (budget.min || budget.max) {
                 const minBudget = budget.min ? parseFloat(budget.min) : 0;
                 const maxBudget = budget.max ? parseFloat(budget.max) : Infinity;
@@ -507,7 +552,6 @@ export default function FilterResults() {
             return true;
         });
 
-        // Apply sorting
         const sortOption = filters.sortBy[0] || 'Relevance';
         if (sortOption !== 'Relevance') {
             filteredProjects.sort((a, b) => {
@@ -572,7 +616,7 @@ export default function FilterResults() {
             `}</style>
             <div className="min-h-screen bg-gray-50 text-gray-900">
                 <Navbar />
-                <main className="pt-32 pb-8">
+                <main className="pt-28 pb-8">
                     <div className="container mx-auto px-4 lg:px-8">
                         <h1 className="text-3xl font-bold text-gray-800 mb-6">
                             {pageTitle} ({filteredAndSortedProjects.length} results)
@@ -590,57 +634,30 @@ export default function FilterResults() {
                                     className="w-full px-4 pl-10 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-800"
                                 />
                             </div>
-                            <TagFilterDropdown
-                                label="Popular Localities"
-                                options={filterOptions.localities}
-                                selected={filters.localities}
-                                onChange={(value) => handleFilterChange('localities', value)}
-                            />
-                            <TagFilterDropdown
-                                label="BHK"
-                                options={filterOptions.bhk}
-                                selected={filters.bhk}
-                                onChange={(value) => handleFilterChange('bhk', value)}
-                            />
-                            <BudgetDropdown
-                                label="Budget"
-                                selected={filters.budget}
-                                onChange={(value) => handleFilterChange('budget', value)}
-                            />
-                            <TagFilterDropdown
-                                label="Possession"
-                                options={filterOptions.possession}
-                                selected={filters.possession}
-                                onChange={(value) => handleFilterChange('possession', value)}
-                            />
-                            <TagFilterDropdown
-                                label="Property Type"
-                                options={filterOptions.propertyType}
-                                selected={filters.propertyType}
-                                onChange={(value) => handleFilterChange('propertyType', value)}
-                            />
-                            <TagFilterDropdown
-                                label="Sort By"
-                                options={filterOptions.sortBy}
-                                selected={filters.sortBy}
-                                onChange={(value) => handleFilterChange('sortBy', value)}
-                            />
+                            <TagFilterDropdown label="Popular Localities" options={filterOptions.localities} selected={filters.localities} onChange={(v) => handleFilterChange('localities', v)} />
+                            <TagFilterDropdown label="BHK" options={filterOptions.bhk} selected={filters.bhk} onChange={(v) => handleFilterChange('bhk', v)} />
+                            <BudgetDropdown label="Budget" selected={filters.budget} onChange={(v) => handleFilterChange('budget', v)} />
+                            <TagFilterDropdown label="Possession" options={filterOptions.possession} selected={filters.possession} onChange={(v) => handleFilterChange('possession', v)} />
+                            <TagFilterDropdown label="Property Type" options={filterOptions.propertyType} selected={filters.propertyType} onChange={(v) => handleFilterChange('propertyType', v)} />
+                            <TagFilterDropdown label="Sort By" options={filterOptions.sortBy} selected={filters.sortBy} onChange={(v) => handleFilterChange('sortBy', v)} />
                             <button onClick={clearAllFilters} className="text-sm font-semibold text-gray-600 hover:text-blue-800 flex items-center gap-1 ml-auto">
                                 <XIcon size={14} />
                                 Clear All
                             </button>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <div className="lg:col-span-2 space-y-6">
+                            <div className="lg:col-span-2 space-y-8">
                                 {filteredAndSortedProjects.length === 0 ? (
                                     <div className="text-center py-16 bg-white rounded-lg shadow-md">
                                         <h3 className="text-xl font-semibold text-gray-700">No projects found.</h3>
                                         <p className="text-gray-500 mt-2">Try adjusting your filters to find what you're looking for.</p>
                                     </div>
                                 ) : (
-                                    filteredAndSortedProjects.map((project: any) => (
-                                        <FlatCard key={`${project.id}-${project.name}`} flat={project} />
-                                    ))
+                                    <div className="grid gap-8">
+                                        {filteredAndSortedProjects.map((project: any) => (
+                                            <FlatCard key={`${project.id}-${project.name}`} flat={project} />
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                             <ScheduleForm />

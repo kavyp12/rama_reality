@@ -108,9 +108,14 @@ All colors MUST be HSL.
 @layer base {
   * {
     @apply border-border;
+    /* 🔑 FIX 1: Ensure proper box model for all elements */
+    box-sizing: border-box;
   }
 
   body {
     @apply bg-background text-foreground;
+    /* 🔑 FIX 2: Prevent horizontal scrollbar/overflow space */
+    overflow-x: hidden;
+    width: 100%;
   }
 }
