@@ -76,8 +76,65 @@ const projectData = [
     imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
   },
 ];
+function PropertyBanner() {
+  return (
+    <div className="w-full max-w-7xl mx-auto p-4 pt-12">
+      <div className="
+        relative 
+        bg-gradient-to-r from-sky-200 to-sky-300 
+        rounded-xl md:rounded-3xl 
+        shadow-sm
+      ">
+        <div className="
+          flex items-center 
+          px-4 py-6           /* ✅ Super thin mobile */
+          sm:px-5 sm:py-8
+          md:px-12 md:py-16  /* ✅ Desktop full padding */
+        ">
 
-// Data for the navigation tabs
+          <div className="flex-1">
+            <h1 className="
+              text-xl sm:text-2xl md:text-5xl 
+              font-light text-gray-800 
+              leading-snug sm:leading-snug md:leading-tight
+            ">
+              <span>Your </span>
+              <span className="font-bold text-gray-900">Dream Property</span>
+              <span> just a </span>
+
+              <span className="relative inline-block">
+                click
+
+                <img
+                  src="/click (1).png"
+                  alt="cursor"
+                  className="
+                    absolute 
+                    w-4 h-4          /* ✅ Even smaller cursor on mobile */
+                    sm:w-5 sm:h-5
+                    md:w-10 md:h-10 
+                    -bottom-3        /* ✅ Cursor closer */
+                    sm:-bottom-4
+                    md:-bottom-10 
+                    left-1/2
+                  "
+                  style={{
+                    transform: "translateX(-38%) rotate(8deg)"
+                  }}
+                />
+              </span>
+
+              <span> away</span>
+            </h1>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 const tabs = ['Ahmedabad', 'Gandhinagar', 'Surat', 'Vadodara', 'Rajkot'];
 
 const NewProject = () => {
@@ -233,7 +290,7 @@ const NewProject = () => {
             View all new projects in Ahmedabad
           </button>
         </div>
-
+       <PropertyBanner />
       </div>
     </div>
   );
