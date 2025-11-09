@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useNavigate } from 'react-router-dom'; // 👈 ADD THIS LINE
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+// import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 // Property interface
 interface Property {
@@ -1131,225 +1131,157 @@ export default function PropertyMap() {
         </div>
       </div>
 
-      {/* Main Content */}
-<div className="flex-1 flex flex-col overflow-hidden relative">
+     {/* Main Content */}
+<div className="flex-1 flex lg:flex-row flex-col overflow-hidden relative">
 
-  {/* --- MOBILE VIEW --- */}
-  {/* This container shows only on mobile (under lg breakpoint) */}
-  <div className="lg:hidden flex-1 flex flex-col overflow-hidden relative">
-    {/* Map Container (Mobile) */}
-    <div className="w-full h-full relative">
-      <div
-        ref={mapContainerRef}
-        className="h-full w-full"
-        style={{ height: '100%', width: '100%' }}
-      />
-
-      {/* Map Overlays (Copied for mobile view) */}
-      {isMapReady && (
-        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg z-10">
-          <div className="flex overflow-hidden rounded-lg">
-            <button
-              onClick={() => setMapType('roadmap')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                mapType === 'roadmap' ? 'text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-              style={{ backgroundColor: mapType === 'roadmap' ? '#4299E1' : 'white' }}
-            >
-              Map
-            </button>
-            <button
-              onClick={() => setMapType('satellite')}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-l ${
-                mapType === 'satellite' ? 'text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-              style={{ backgroundColor: mapType === 'satellite' ? '#4299E1' : 'white' }}
-            >
-              Satellite
-            </button>
-            <button
-              onClick={() => setMapType('hybrid')}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-l ${
-                mapType === 'hybrid' ? 'text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-              style={{ backgroundColor: mapType === 'hybrid' ? '#4299E1' : 'white' }}
-            >
-              Hybrid
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {/* Loading Overlay (Copied for mobile view) */}
-      {(!isMapReady || isLoading) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-20">
-          <div className="text-center">
-            <div
-              className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 mb-4"
-              style={{ borderColor: '#4299E1' }}
-            ></div>
-            <p className="text-gray-600 font-medium">
-              {isLoading ? 'Loading properties...' : 'Loading Google Maps...'}
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-
-    {/* Mobile Bottom Sheet List - Fixed Position */}
-    {/* (This is your existing mobile sheet code - unchanged) */}
+  {/* Map Container */}
+  <div className="w-full lg:w-3/5 h-full relative">
     <div
-      className={`block lg:hidden fixed bottom-0 left-0 right-0 w-full bg-gray-50 rounded-t-2xl shadow-2xl z-20 transition-all duration-300 ease-in-out ${
-        isSheetOpen ? 'h-[240px]' : 'h-14'
-      }`}
-    >
-      <div
-        className="flex justify-between items-center px-4 py-3 border-b cursor-pointer bg-white rounded-t-2xl"
-        onClick={() => setIsSheetOpen(!isSheetOpen)}
-      >
-        <h2 className="text-base font-bold">
-          Properties ({visibleProperties.length})
-        </h2>
-        {isSheetOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-      </div>
+      ref={mapContainerRef}
+      className="h-full w-full"
+      style={{ height: "100%", width: "100%" }}
+    />
 
-      <div
-        className={`overflow-x-auto overflow-y-hidden ${
-          isSheetOpen ? 'h-[calc(240px-53px)]' : 'h-0'
-        }`}
-      >
-        {isLoading ? (
-          <div className="text-center py-8 text-gray-500 w-full">
-            <p className="font-medium text-sm">Loading properties...</p>
-          </div>
-        ) : visibleProperties.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 w-full">
-            <p className="font-medium text-sm">No properties in view</p>
-            <p className="text-xs mt-1">Move or zoom the map</p>
-          </div>
-        ) : (
-          <div className="flex p-3 space-x-2 h-full">
-            {visibleProperties.map((property) => (
-              <PropertyCardSmall
-                key={property.id}
-                property={property}
-                isHighlighted={property.id === selectedPropertyId}
-                onClick={() => handlePropertyCardClick(property)}
-              />
-            ))}
-          </div>
-        )}
+    {/* Layer Control */}
+    {isMapReady && (
+      <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg z-10">
+        <div className="flex overflow-hidden rounded-lg">
+          <button
+            onClick={() => setMapType("roadmap")}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              mapType === "roadmap"
+                ? "text-white"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
+            style={{
+              backgroundColor: mapType === "roadmap" ? "#4299E1" : "white",
+            }}
+          >
+            Map
+          </button>
+
+          <button
+            onClick={() => setMapType("satellite")}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-l ${
+              mapType === "satellite"
+                ? "text-white"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
+            style={{
+              backgroundColor: mapType === "satellite" ? "#4299E1" : "white",
+            }}
+          >
+            Satellite
+          </button>
+
+          <button
+            onClick={() => setMapType("hybrid")}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-l ${
+              mapType === "hybrid"
+                ? "text-white"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
+            style={{
+              backgroundColor: mapType === "hybrid" ? "#4299E1" : "white",
+            }}
+          >
+            Hybrid
+          </button>
+        </div>
       </div>
-    </div>
+    )}
+
+    {/* Move Map Notice */}
+    {isMapReady && (
+      <div className="absolute bottom-4 left-4 bg-white px-4 py-2 rounded-lg shadow-lg text-sm text-gray-600 z-10 hidden lg:block">
+        <p className="font-semibold">Move map to filter properties</p>
+      </div>
+    )}
+
+    {/* Map Loading */}
+    {!isMapReady && (
+      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div
+            className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 mb-4"
+            style={{ borderColor: "#4299E1" }}
+          ></div>
+          <p className="text-gray-600 font-medium">Loading Google Maps...</p>
+        </div>
+      </div>
+    )}
   </div>
 
+  {/* Desktop Sidebar List */}
+  <div className="hidden lg:block w-full lg:w-2/5 bg-white overflow-y-auto p-4 space-y-4">
+    <div className="mb-3">
+      <h1 className="text-xl font-bold text-gray-800">
+        Properties in {selectedCity || "Ahmedabad"}
+      </h1>
+      <p className="text-sm text-gray-600">
+        {visibleProperties.length} properties visible
+      </p>
+    </div>
 
-  {/* --- DESKTOP RESIZABLE VIEW --- */}
-  {/* This container shows only on desktop (lg breakpoint and up) */}
-  <PanelGroup direction="horizontal" className="hidden lg:flex flex-1 overflow-hidden relative">
-    
-    {/* Panel 1: The Map */}
-    <Panel defaultSize={65} minSize={40} className="relative">
-      <div
-        ref={mapContainerRef}
-        className="h-full w-full"
-        style={{ height: '100%', width: '100%' }}
-      />
-      
-      {/* Map Overlays (for desktop view) */}
-      {isMapReady && (
-        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg z-10">
-          <div className="flex overflow-hidden rounded-lg">
-            <button
-              onClick={() => setMapType('roadmap')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                mapType === 'roadmap' ? 'text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-              style={{ backgroundColor: mapType === 'roadmap' ? '#4299E1' : 'white' }}
-            >
-              Map
-            </button>
-            <button
-              onClick={() => setMapType('satellite')}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-l ${
-                mapType === 'satellite' ? 'text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-              style={{ backgroundColor: mapType === 'satellite' ? '#4299E1' : 'white' }}
-            >
-              Satellite
-            </button>
-            <button
-              onClick={() => setMapType('hybrid')}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-l ${
-                mapType === 'hybrid' ? 'text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-              style={{ backgroundColor: mapType === 'hybrid' ? '#4299E1' : 'white' }}
-            >
-              Hybrid
-            </button>
-          </div>
+    {visibleProperties.length === 0 ? (
+      <div className="text-center py-16 text-gray-500">
+        <p className="text-lg font-medium">No properties in current view</p>
+      </div>
+    ) : (
+      visibleProperties.map((property) => (
+        <PropertyCardLarge
+          key={property.id}
+          property={property}
+          isHighlighted={property.id === selectedPropertyId}
+          onClick={() => handlePropertyCardClick(property)}
+        />
+      ))
+    )}
+  </div>
+
+  {/* Mobile Bottom Sheet */}
+  <div
+    className={`block lg:hidden fixed bottom-0 left-0 right-0 w-full bg-gray-50 rounded-t-2xl shadow-2xl z-20 transition-all duration-300 ease-in-out ${
+      isSheetOpen ? "h-[240px]" : "h-14"
+    }`}
+  >
+    <div
+      className="flex justify-between items-center px-4 py-3 border-b cursor-pointer bg-white rounded-t-2xl"
+      onClick={() => setIsSheetOpen(!isSheetOpen)}
+    >
+      <h2 className="text-base font-bold">
+        Properties ({visibleProperties.length})
+      </h2>
+
+      {isSheetOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+    </div>
+
+    <div
+      className={`overflow-x-auto overflow-y-hidden ${
+        isSheetOpen ? "h-[calc(240px-53px)]" : "h-0"
+      }`}
+    >
+      {visibleProperties.length === 0 ? (
+        <div className="text-center py-8 text-gray-500 w-full">
+          <p className="font-medium text-sm">No properties in view</p>
+          <p className="text-xs mt-1">Move or zoom the map</p>
         </div>
-      )}
-
-      {isMapReady && (
-        <div className="absolute bottom-4 left-4 bg-white px-4 py-2 rounded-lg shadow-lg text-sm text-gray-600 z-10 hidden lg:block">
-          <p className="font-semibold">Move map to filter properties</p>
-        </div>
-      )}
-
-      {/* Loading Overlay (for desktop view) */}
-      {(!isMapReady || isLoading) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-20">
-          <div className="text-center">
-            <div
-              className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 mb-4"
-              style={{ borderColor: '#4299E1' }}
-            ></div>
-            <p className="text-gray-600 font-medium">
-              {isLoading ? 'Loading properties...' : 'Loading Google Maps...'}
-            </p>
-          </div>
-        </div>
-      )}
-    </Panel>
-
-    {/* The Resizable Handle */}
-    <PanelResizeHandle className="w-1.5 bg-gray-200 hover:bg-blue-600 active:bg-blue-700 transition-colors z-10" />
-
-    {/* Panel 2: The Sidebar */}
-    <Panel defaultSize={35} minSize={25}>
-      <div className="w-full h-full bg-white overflow-y-auto p-4 space-y-4">
-        <div className="mb-3">
-          <h1 className="text-xl font-bold text-gray-800">
-            Properties in {selectedCity || 'Ahmedabad'}
-          </h1>
-          <p className="text-sm text-gray-600">
-            {visibleProperties.length} properties visible
-          </p>
-        </div>
-        
-        {isLoading ? (
-          <div className="text-center py-16 text-gray-500">
-            <p className="text-lg font-medium">Loading properties...</p>
-          </div>
-        ) : visibleProperties.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            <p className="text-lg font-medium">No properties in current view</p>
-          </div>
-        ) : (
-          visibleProperties.map((property) => (
-            <PropertyCardLarge
+      ) : (
+        <div className="flex p-3 space-x-2 h-full">
+          {visibleProperties.map((property) => (
+            <PropertyCardSmall
               key={property.id}
               property={property}
               isHighlighted={property.id === selectedPropertyId}
               onClick={() => handlePropertyCardClick(property)}
             />
-          ))
-        )}
-      </div>
-    </Panel>
-  </PanelGroup>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
 </div>
+
 
 
       {/* Full Filter Modal */}
