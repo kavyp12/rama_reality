@@ -183,9 +183,9 @@ connectDB();
 
 // CORS configuration for AWS deployment
 const allowedOrigins = [
-  'http://51.21.202.0',
-  'http://51.21.202.0:80',
-  'https://51.21.202.0',
+  'http://51.20.85.130',
+  'http://51.20.85.130:80',
+  'https://51.20.85.130',
   'https://rama-reality.vercel.app', // Keep as backup
   'http://localhost:8080', // For local development
   process.env.FRONTEND_URL,
@@ -262,7 +262,7 @@ app.listen(PORT, () => {
   console.log(`📍 Server: http://localhost:${PORT}`);
   console.log(`📍 API: http://localhost:${PORT}/api`);
   console.log(`📍 Health: http://localhost:${PORT}/api/health`);
-  console.log(`🌐 Public IP: http://51.21.202.0:${PORT}`);
+  console.log(`🌐 Public IP: http://51.20.85.130:${PORT}`);
   console.log('='.repeat(50));
 });
 
