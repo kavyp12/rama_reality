@@ -41,6 +41,8 @@ const Navbar = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
+  const buyRef = useRef(null);
+
   // ✅ Hide on scroll logic
   useEffect(() => {
     const handleScroll = () => {
@@ -56,6 +58,17 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
+
+  // ✅ Click outside to close BUY menu
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (buyRef.current && !buyRef.current.contains(e.target)) {
+        setIsBuyDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <>
@@ -77,7 +90,7 @@ const Navbar = () => {
           <div className="hidden lg:flex items-center space-x-6 absolute left-1/2 transform -translate-x-1/2">
 
             {/* ✅ BUY DROPDOWN */}
-            <div className="relative">
+            <div className="relative" ref={buyRef}>
               <button
                 onClick={() => setIsBuyDropdownOpen(!isBuyDropdownOpen)}
                 className="flex items-center text-[15px] font-medium text-gray-700 hover:text-gray-900"
@@ -148,7 +161,17 @@ const Navbar = () => {
 
           {/* ✅ RIGHT DESKTOP BUTTONS */}
           <div className="hidden lg:flex items-center space-x-5">
-            <a className="text-[15px] font-semibold" style={{ color: PRIMARY }}>myReality</a>
+
+            {/* ✅ ADMIN BUTTON */}
+            <a
+              href="/admin"
+              className="text-[15px] font-semibold hover:text-gray-900"
+              target="_blank"
+            >
+              Admin
+            </a>
+
+            {/* <a className="text-[15px] font-semibold" style={{ color: PRIMARY }}>myReality</a> */}
             <a className="rounded-lg px-4 py-2 text-white" style={{ backgroundColor: PRIMARY }}>
               Sign up or Log in
             </a>
@@ -209,6 +232,15 @@ const Navbar = () => {
           <a className="block py-2">Sell</a>
           <a className="block py-2">Explore</a>
           <a className="block py-2">New Projects</a>
+
+          {/* ✅ ADMIN BUTTON MOBILE */}
+          <a
+            href="http://51.20.85.130/admin"
+            className="block py-2 font-semibold"
+            target="_blank"
+          >
+            Admin
+          </a>
 
           <hr className="my-3" />
 
