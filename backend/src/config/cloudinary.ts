@@ -93,31 +93,23 @@ testCloudinary();
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
+    // Check if file is PDF
     const isPDF = file.mimetype === 'application/pdf';
     
-    const baseConfig: any = {
+    return {
       folder: 'replica-elegance',
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'],
+      // Only apply transformation to images, not PDFs
+      transformation: isPDF ? undefined : [
+        { 
+          width: 1920, 
+          height: 1080, 
+          crop: 'limit',
+          quality: 'auto:good', // Auto quality optimization
+          fetch_format: 'auto' // Auto format selection (WebP where supported)
+        }
+      ],
     };
-
-    if (isPDF) {
-      return {
-        ...baseConfig,
-        resource_type: 'raw',
-        format: 'pdf',
-      };
-    } else {
-      return {
-        ...baseConfig,
-        resource_type: 'image',
-        transformation: [
-          { 
-            quality: 'auto:good',
-            fetch_format: 'auto'
-          }
-        ],
-      };
-    }
   },
 });
 
