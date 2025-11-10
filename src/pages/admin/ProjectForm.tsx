@@ -258,24 +258,109 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     }
   }, [mapType]);
 
- const handleSearchLocation = async () => {
+  // const handleSearchLocation = () => {
+  //   if (!searchQuery.trim() || !mapRef.current || !(window as any).google) return;
+  //   const geocoder = new (window as any).google.maps.Geocoder();
+  //   geocoder.geocode({ address: searchQuery }, (results: any, status: any) => {
+  //     if (status === 'OK' && results[0]) {
+  //       const location = results[0].geometry.location;
+  //       const lat = location.lat();
+  //       const lng = location.lng();
+  //       mapRef.current.panTo(location);
+  //       mapRef.current.setZoom(15);
+  //       if (markerRef.current) {
+  //         markerRef.current.setPosition(location);
+  //       } else {
+  //         markerRef.current = new (window as any).google.maps.Marker({
+  //           position: location,
+  //           map: mapRef.current,
+  //           draggable: true,
+  //           animation: (window as any).google.maps.Animation.DROP,
+  //         });
+  //         (window as any).google.maps.event.addListener(markerRef.current, 'dragend', (e: any) => {
+  //           const lat = e.latLng.lat();
+  //           const lng = e.latLng.lng();
+  //           setFormData((prev: any) => ({
+  //             ...prev,
+  //             locationData: {
+  //               ...prev.locationData,
+  //               coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+  //               googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
+  //             }
+  //           }));
+  //         });
+  //       }
+  //       setFormData((prev: any) => ({
+  //         ...prev,
+  //         locationData: {
+  //           ...prev.locationData,
+  //           coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+  //           googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+  //           address: results[0].formatted_address
+  //         }
+  //       }));
+  //       const infoWindow = new (window as any).google.maps.InfoWindow({
+  //         content: `
+  //           <div style="padding: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;">
+  //             <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1f2937;">Location Found!</h3>
+  //             <p style="margin: 0; font-size: 12px; color: #6b7280;">${results[0].formatted_address}</p>
+  //           </div>
+  //         `
+  //       });
+  //       infoWindow.open(mapRef.current, markerRef.current);
+  //     } else {
+  //       alert('Location not found. Please try a different search term.');
+  //     }
+  //   });
+  // };
+
+
+const handleSearchLocation = async () => {
     if (!searchQuery.trim() || !mapRef.current || !(window as any).google) return;
     
+    setIsSearching(true);
+    
     try {
-      // Try using Nominatim (OpenStreetMap) geocoding as backup
+      // Enhanced query with location biasing for Ahmedabad area
       const encodedQuery = encodeURIComponent(searchQuery);
+      
+      // Bias search towards Ahmedabad, Gujarat region
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=1`
+        `https://nominatim.openstreetmap.org/search?` +
+        `format=json&` +
+        `q=${encodedQuery}&` +
+        `limit=5&` +
+        `viewbox=72.4147,23.1685,72.7381,22.9368&` + // Ahmedabad bounding box
+        `bounded=0&` + // Don't strictly limit to box, but prefer results in it
+        `addressdetails=1&` +
+        `accept-language=en`
       );
       const data = await response.json();
       
       if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
+        // Find best match - prioritize results in Gujarat/Ahmedabad
+        let bestResult = data[0];
+        for (const result of data) {
+          const addr = result.address || {};
+          if (addr.state === 'Gujarat' || addr.city === 'Ahmedabad' || 
+              addr.county === 'Ahmedabad' || result.display_name.includes('Gujarat')) {
+            bestResult = result;
+            break;
+          }
+        }
+        
+        const lat = parseFloat(bestResult.lat);
+        const lng = parseFloat(bestResult.lon);
         const location = new (window as any).google.maps.LatLng(lat, lng);
         
+        // Smooth pan animation
         mapRef.current.panTo(location);
-        mapRef.current.setZoom(15);
+        
+        // Set appropriate zoom based on result type
+        const zoomLevel = bestResult.type === 'city' ? 12 : 
+                         bestResult.type === 'residential' ? 16 :
+                         bestResult.type === 'house' ? 18 : 15;
+        mapRef.current.setZoom(zoomLevel);
         
         if (markerRef.current) {
           markerRef.current.setPosition(location);
@@ -306,28 +391,38 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             ...prev.locationData,
             coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
             googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
-            address: data[0].display_name
+            address: bestResult.display_name
           }
         }));
         
+        // Enhanced info window with better styling
         const infoWindow = new (window as any).google.maps.InfoWindow({
           content: `
-            <div style="padding: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;">
-              <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1f2937;">Location Found!</h3>
-              <p style="margin: 0; font-size: 12px; color: #6b7280;">${data[0].display_name}</p>
+            <div style="padding: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; max-width: 250px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #1f2937;">Location Found</h3>
+              </div>
+              <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.5;">${bestResult.display_name}</p>
+              <p style="margin: 8px 0 0 0; font-size: 11px; color: #9ca3af;">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
             </div>
           `
         });
         infoWindow.open(mapRef.current, markerRef.current);
+        
+        setSearchQuery(''); // Clear search after successful search
       } else {
-        alert('Location not found. Please try:\n• Adding city name (e.g., "Bodakdev, Ahmedabad")\n• Using a more specific address\n• Clicking directly on the map');
+        alert('Location not found. Please try:\n• Adding "Ahmedabad" to your search\n• Using landmarks (e.g., "SG Highway, Ahmedabad")\n• Being more specific with the area name\n• Clicking directly on the map');
       }
     } catch (error) {
       console.error('Geocoding error:', error);
-      alert('Error searching location. Please try clicking directly on the map or use a more specific search term.');
+      alert('Error searching location. Please check your internet connection or try clicking directly on the map.');
+    } finally {
+      setIsSearching(false);
     }
   };
 
+  
   const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -1656,3 +1751,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 };
 
 export default ProjectForm;
+
+function setIsSearching(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}
