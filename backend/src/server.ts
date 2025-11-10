@@ -204,9 +204,9 @@ app.use(cors({
   },
   credentials: true,
 }));
-
-app.use(express.json({ limit: '0' }));
-app.use(express.urlencoded({ extended: true, limit: '0' }));
+// ⭐ CHANGE THIS - Set to a large value instead of '0'
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Request logger middleware
 app.use((req, res, next) => {
