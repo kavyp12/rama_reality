@@ -20,7 +20,7 @@ const filterOptions = {
         'Sanathal', 'Satellite', 'Science City', 'Science Park', 'SG highway', 'Shela Shilaj',
         'Sindhubhavan Road', 'Sola', 'South Bopal', 'Thaltej', 'Tragad', 'Vaishnodevi',
         'Zundal', 'Vastrapur', 'Shela'
-    ],
+    ], 
     bhk: ['1 BHK', '2 BHK', '3 BHK', '4 BHK', '5 BHK', '6 BHK', '7 BHK'],
     possession: ['Ready to Move', 'Upto 1 Year', 'Upto 2 Years', '2+ Years'],
     propertyType: ['Flat', 'Penthouse', 'Duplex', 'Villa', 'House'],

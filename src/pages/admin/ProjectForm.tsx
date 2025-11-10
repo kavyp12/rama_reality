@@ -792,11 +792,11 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description *
+                    location *
                   </label>
                   <textarea 
                     name="description" 
-                    placeholder="Short description for list page..." 
+                    placeholder="location of place that show on the card" 
                     onChange={handleChange}
                     value={formData.description || ''}
                     required
