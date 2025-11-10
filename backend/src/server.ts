@@ -205,7 +205,6 @@ app.use(cors({
   credentials: true,
 }));
 
-// ⭐ REMOVE ALL SIZE LIMITS - Set to '0' for unlimited
 app.use(express.json({ limit: '0' }));
 app.use(express.urlencoded({ extended: true, limit: '0' }));
 
