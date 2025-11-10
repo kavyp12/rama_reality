@@ -161,7 +161,7 @@
 // // Export for Vercel serverless
 // export default app;
 
-// src/server.ts - AWS Production Version
+// src/server.ts - AWS Production Version with NO SIZE LIMITS
 import express, { Application } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -185,14 +185,13 @@ const allowedOrigins = [
   'http://51.20.85.130',
   'http://51.20.85.130:80',
   'https://51.20.85.130',
-  'https://rama-reality.vercel.app', // Keep as backup
-  'http://localhost:8080', // For local development
+  'https://rama-reality.vercel.app',
+  'http://localhost:8080',
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) === -1) {
@@ -206,10 +205,11 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// ⭐ REMOVE ALL SIZE LIMITS - Set to '0' for unlimited
+app.use(express.json({ limit: '0' }));
+app.use(express.urlencoded({ extended: true, limit: '0' }));
 
-// Request logger middleware (add before routes)
+// Request logger middleware
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.path}`);
   next();
@@ -268,6 +268,7 @@ app.listen(PORT, () => {
   console.log(`📍 API: http://localhost:${PORT}/api`);
   console.log(`📍 Health: http://localhost:${PORT}/api/health`);
   console.log(`🌐 Public IP: http://51.20.85.130:${PORT}`);
+  console.log('⭐ Upload Size: UNLIMITED');
   console.log('='.repeat(50));
 });
 

@@ -19,12 +19,10 @@ import { uploadImage } from '../controllers/uploadController';
 
 const router = express.Router();
 
-// Limit file size to 4MB per file
+// ⭐ NO FILE SIZE LIMITS - Upload any size
 const upload = multer({ 
   storage,
-  limits: {
-    fileSize: 4 * 1024 * 1024, // 4MB in bytes
-  },
+  // Remove limits completely
   fileFilter: (req, file, cb) => {
     // Accept images and PDFs only
     if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
@@ -41,28 +39,22 @@ router.get('/', (req, res) => {
     success: true,
     message: 'Upload endpoint is ready. Use POST request with multipart/form-data.',
     maxFiles: 10,
-    maxFileSize: '4MB per file',
+    maxFileSize: 'Unlimited',
     supportedFormats: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'],
     fieldName: 'files',
   });
 });
 
-// Upload multiple files (max 10, each max 4MB)
+// Upload multiple files (max 10, unlimited size per file)
 router.post('/', upload.array('files', 10), uploadImage);
 
 // Error handler for multer errors
 router.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({
-        success: false,
-        error: 'File too large',
-        message: 'Each file must be less than 4MB. Please compress your images before uploading.',
-      });
-    }
     return res.status(400).json({
       success: false,
-      error: err.message,
+      error: 'Upload error',
+      message: err.message,
     });
   }
   

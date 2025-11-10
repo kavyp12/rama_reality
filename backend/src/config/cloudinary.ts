@@ -100,15 +100,15 @@ const storage = new CloudinaryStorage({
       folder: 'replica-elegance',
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'],
       // Only apply transformation to images, not PDFs
+      // ⭐ REMOVED size limits from transformation
       transformation: isPDF ? undefined : [
         { 
-          width: 1920, 
-          height: 1080, 
-          crop: 'limit',
-          quality: 'auto:good', // Auto quality optimization
-          fetch_format: 'auto' // Auto format selection (WebP where supported)
+          quality: 'auto:good',
+          fetch_format: 'auto'
         }
       ],
+      // ⭐ Let Cloudinary handle any size
+      resource_type: 'auto',
     };
   },
 });
