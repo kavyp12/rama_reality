@@ -161,7 +161,6 @@
 // // Export for Vercel serverless
 // export default app;
 
-
 // src/server.ts - AWS Production Version
 import express, { Application } from 'express';
 import dotenv from 'dotenv';
@@ -209,6 +208,12 @@ app.use(cors({
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Request logger middleware (add before routes)
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.path}`);
+  next();
+});
 
 // Root endpoint
 app.get('/', (req, res) => {

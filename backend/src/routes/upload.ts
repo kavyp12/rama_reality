@@ -12,8 +12,6 @@
 // router.post('/', upload.array('files', 10), uploadImage);
 
 // export default router;
-
-
 import express from 'express';
 import multer from 'multer';
 import { storage } from '../config/cloudinary';
@@ -35,6 +33,18 @@ const upload = multer({
       cb(new Error('Only images and PDF files are allowed!'));
     }
   }
+});
+
+// Add a GET endpoint to check if upload service is available
+router.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Upload endpoint is ready. Use POST request with multipart/form-data.',
+    maxFiles: 10,
+    maxFileSize: '4MB per file',
+    supportedFormats: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'],
+    fieldName: 'files',
+  });
 });
 
 // Upload multiple files (max 10, each max 4MB)
