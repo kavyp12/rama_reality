@@ -258,16 +258,82 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     }
   }, [mapType]);
 
-  const handleSearchLocation = () => {
+  // const handleSearchLocation = () => {
+  //   if (!searchQuery.trim() || !mapRef.current || !(window as any).google) return;
+  //   const geocoder = new (window as any).google.maps.Geocoder();
+  //   geocoder.geocode({ address: searchQuery }, (results: any, status: any) => {
+  //     if (status === 'OK' && results[0]) {
+  //       const location = results[0].geometry.location;
+  //       const lat = location.lat();
+  //       const lng = location.lng();
+  //       mapRef.current.panTo(location);
+  //       mapRef.current.setZoom(15);
+  //       if (markerRef.current) {
+  //         markerRef.current.setPosition(location);
+  //       } else {
+  //         markerRef.current = new (window as any).google.maps.Marker({
+  //           position: location,
+  //           map: mapRef.current,
+  //           draggable: true,
+  //           animation: (window as any).google.maps.Animation.DROP,
+  //         });
+  //         (window as any).google.maps.event.addListener(markerRef.current, 'dragend', (e: any) => {
+  //           const lat = e.latLng.lat();
+  //           const lng = e.latLng.lng();
+  //           setFormData((prev: any) => ({
+  //             ...prev,
+  //             locationData: {
+  //               ...prev.locationData,
+  //               coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+  //               googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
+  //             }
+  //           }));
+  //         });
+  //       }
+  //       setFormData((prev: any) => ({
+  //         ...prev,
+  //         locationData: {
+  //           ...prev.locationData,
+  //           coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+  //           googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+  //           address: results[0].formatted_address
+  //         }
+  //       }));
+  //       const infoWindow = new (window as any).google.maps.InfoWindow({
+  //         content: `
+  //           <div style="padding: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;">
+  //             <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1f2937;">Location Found!</h3>
+  //             <p style="margin: 0; font-size: 12px; color: #6b7280;">${results[0].formatted_address}</p>
+  //           </div>
+  //         `
+  //       });
+  //       infoWindow.open(mapRef.current, markerRef.current);
+  //     } else {
+  //       alert('Location not found. Please try a different search term.');
+  //     }
+  //   });
+  // };
+
+
+  const handleSearchLocation = async () => {
     if (!searchQuery.trim() || !mapRef.current || !(window as any).google) return;
-    const geocoder = new (window as any).google.maps.Geocoder();
-    geocoder.geocode({ address: searchQuery }, (results: any, status: any) => {
-      if (status === 'OK' && results[0]) {
-        const location = results[0].geometry.location;
-        const lat = location.lat();
-        const lng = location.lng();
+    
+    try {
+      // Try using Nominatim (OpenStreetMap) geocoding as backup
+      const encodedQuery = encodeURIComponent(searchQuery);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        const location = new (window as any).google.maps.LatLng(lat, lng);
+        
         mapRef.current.panTo(location);
         mapRef.current.setZoom(15);
+        
         if (markerRef.current) {
           markerRef.current.setPosition(location);
         } else {
@@ -290,30 +356,34 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             }));
           });
         }
+        
         setFormData((prev: any) => ({
           ...prev,
           locationData: {
             ...prev.locationData,
             coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
             googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
-            address: results[0].formatted_address
+            address: data[0].display_name
           }
         }));
+        
         const infoWindow = new (window as any).google.maps.InfoWindow({
           content: `
             <div style="padding: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;">
               <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1f2937;">Location Found!</h3>
-              <p style="margin: 0; font-size: 12px; color: #6b7280;">${results[0].formatted_address}</p>
+              <p style="margin: 0; font-size: 12px; color: #6b7280;">${data[0].display_name}</p>
             </div>
           `
         });
         infoWindow.open(mapRef.current, markerRef.current);
       } else {
-        alert('Location not found. Please try a different search term.');
+        alert('Location not found. Please try:\n• Adding city name (e.g., "Bodakdev, Ahmedabad")\n• Using a more specific address\n• Clicking directly on the map');
       }
-    });
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      alert('Error searching location. Please try clicking directly on the map or use a more specific search term.');
+    }
   };
-
   const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
