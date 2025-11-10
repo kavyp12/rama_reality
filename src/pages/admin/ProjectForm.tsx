@@ -258,61 +258,106 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     }
   }, [mapType]);
 
-  const handleSearchLocation = () => {
-    if (!searchQuery.trim() || !mapRef.current || !(window as any).google) return;
-    const geocoder = new (window as any).google.maps.Geocoder();
-    geocoder.geocode({ address: searchQuery }, (results: any, status: any) => {
-      if (status === 'OK' && results[0]) {
-        const location = results[0].geometry.location;
-        const lat = location.lat();
-        const lng = location.lng();
-        mapRef.current.panTo(location);
-        mapRef.current.setZoom(15);
-        if (markerRef.current) {
-          markerRef.current.setPosition(location);
-        } else {
-          markerRef.current = new (window as any).google.maps.Marker({
-            position: location,
-            map: mapRef.current,
-            draggable: true,
-            animation: (window as any).google.maps.Animation.DROP,
-          });
-          (window as any).google.maps.event.addListener(markerRef.current, 'dragend', (e: any) => {
-            const lat = e.latLng.lat();
-            const lng = e.latLng.lng();
-            setFormData((prev: any) => ({
-              ...prev,
-              locationData: {
-                ...prev.locationData,
-                coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-                googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
-              }
-            }));
-          });
-        }
-        setFormData((prev: any) => ({
-          ...prev,
-          locationData: {
-            ...prev.locationData,
-            coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-            googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
-            address: results[0].formatted_address
-          }
-        }));
-        const infoWindow = new (window as any).google.maps.InfoWindow({
-          content: `
-            <div style="padding: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;">
-              <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1f2937;">Location Found!</h3>
-              <p style="margin: 0; font-size: 12px; color: #6b7280;">${results[0].formatted_address}</p>
-            </div>
-          `
-        });
-        infoWindow.open(mapRef.current, markerRef.current);
-      } else {
-        alert('Location not found. Please try a different search term.');
-      }
+  // const handleSearchLocation = () => {
+  //   if (!searchQuery.trim() || !mapRef.current || !(window as any).google) return;
+  //   const geocoder = new (window as any).google.maps.Geocoder();
+  //   geocoder.geocode({ address: searchQuery }, (results: any, status: any) => {
+  //     if (status === 'OK' && results[0]) {
+  //       const location = results[0].geometry.location;
+  //       const lat = location.lat();
+  //       const lng = location.lng();
+  //       mapRef.current.panTo(location);
+  //       mapRef.current.setZoom(15);
+  //       if (markerRef.current) {
+  //         markerRef.current.setPosition(location);
+  //       } else {
+  //         markerRef.current = new (window as any).google.maps.Marker({
+  //           position: location,
+  //           map: mapRef.current,
+  //           draggable: true,
+  //           animation: (window as any).google.maps.Animation.DROP,
+  //         });
+  //         (window as any).google.maps.event.addListener(markerRef.current, 'dragend', (e: any) => {
+  //           const lat = e.latLng.lat();
+  //           const lng = e.latLng.lng();
+  //           setFormData((prev: any) => ({
+  //             ...prev,
+  //             locationData: {
+  //               ...prev.locationData,
+  //               coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+  //               googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
+  //             }
+  //           }));
+  //         });
+  //       }
+  //       setFormData((prev: any) => ({
+  //         ...prev,
+  //         locationData: {
+  //           ...prev.locationData,
+  //           coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+  //           googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+  //           address: results[0].formatted_address
+  //         }
+  //       }));
+  //       const infoWindow = new (window as any).google.maps.InfoWindow({
+  //         content: `
+  //           <div style="padding: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;">
+  //             <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1f2937;">Location Found!</h3>
+  //             <p style="margin: 0; font-size: 12px; color: #6b7280;">${results[0].formatted_address}</p>
+  //           </div>
+  //         `
+  //       });
+  //       infoWindow.open(mapRef.current, markerRef.current);
+  //     } else {
+  //       alert('Location not found. Please try a different search term.');
+  //     }
+  //   });
+  // };
+
+
+  const handleSearchLocation = async () => {
+  if (!searchQuery.trim() || !mapRef.current) return;
+
+  const accessToken = "YOUR_MAPBOX_TOKEN";
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+    searchQuery
+  )}.json?access_token=${accessToken}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (!data.features.length) {
+    alert("Location not found");
+    return;
+  }
+
+  const [lng, lat] = data.features[0].center;
+
+  const location = { lat, lng };
+
+  mapRef.current.panTo(location);
+  mapRef.current.setZoom(15);
+
+  if (markerRef.current) {
+    markerRef.current.setPosition(location);
+  } else {
+    markerRef.current = new (window as any).google.maps.Marker({
+      position: location,
+      map: mapRef.current,
+      draggable: true,
     });
-  };
+  }
+
+  setFormData((prev: any) => ({
+    ...prev,
+    locationData: {
+      ...prev.locationData,
+      coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+      address: data.features[0].place_name,
+    },
+  }));
+};
 
   const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
