@@ -11,9 +11,10 @@ import {
 } from 'lucide-react';
 import { Heart as HeartIconFilled } from 'lucide-react'; // 👈 Filled
 import { FaWhatsapp } from 'react-icons/fa';
+import { Check } from 'lucide-react';
+
 import { useWishlist } from '../../context/WishilistContext'; // 👈 Import the hook
-// ... (defaultFilterOptions, initialFilters, navbarFilterMap, utility functions: parsePrice, getPriceRange, getPossessionMonths, matchesBHK, matchesPropertyType, matchesPossession)
-// ... (All these functions remain EXACTLY the same as in your file)
+
 // ✅ ADD DEFAULT FILTER OPTIONS (fallback if API fails)
 const defaultFilterOptions = {
     localities: [],
@@ -451,7 +452,7 @@ export const FlatCard = ({ flat }: { flat: any }) => {
 };
 
 
-// --- SCHEDULE FORM (Unchanged) ---
+// --- SCHEDULE FORM (MODIFIED FOR MULTI-STEP OTP) ---
 const ScheduleForm = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -463,6 +464,15 @@ const ScheduleForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // 🌟 NEW: Form step state
+  const [formStep, setFormStep] = useState<'details' | 'otp' | 'success'>('details');
+
+  // OTP States
+  const [otp, setOtp] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -470,23 +480,93 @@ const ScheduleForm = () => {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // 🌟 MODIFIED: This just sends OTP and moves to the next step
+  const handleSendOTP = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    // Validation
     if (!formData.name || !formData.phone || !formData.email) {
       setError('Please fill in all fields.');
       return;
     }
-    if (!consent) {
+    if (!formData.phone || formData.phone.length < 10) {
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+     if (!consent) {
       setError('Please agree to be contacted.');
       return;
     }
 
-    setLoading(true);
+    setSendingOtp(true);
     setError(null);
-    setSuccess(false);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/leads`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/otp/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: formData.phone }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFormStep('otp'); // 👈 Move to OTP step
+        setResendTimer(60);
+        
+        const interval = setInterval(() => {
+          setResendTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        setError(null);
+      } else {
+        setError(data.error || 'Failed to send OTP');
+      }
+    } catch (err) {
+      console.error('Error sending OTP:', err);
+      setError('Failed to send OTP. Please try again.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  // 🌟 MODIFIED: This function verifies OTP, then submits the lead
+  const handleVerifyAndSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!otp || otp.length !== 6) {
+      setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setVerifyingOtp(true);
+    setError(null);
+
+    try {
+      // 1. Verify OTP
+      const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: formData.phone, code: otp }),
+      });
+
+      const verifyData = await verifyResponse.json();
+
+      if (!verifyData.success) {
+        setError(verifyData.error || 'Invalid OTP. Please try again.');
+        setVerifyingOtp(false);
+        return;
+      }
+
+      // 2. OTP is valid, now submit the lead
+      setLoading(true);
+      const leadResponse = await fetch(`${import.meta.env.VITE_API_URL}/leads`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -497,23 +577,27 @@ const ScheduleForm = () => {
         }),
       });
 
-      const data = await response.json();
+      const leadData = await leadResponse.json();
 
-      if (data.success) {
+      if (leadData.success) {
         setSuccess(true);
-        setFormData({ name: '', phone: '', email: '' });
+        setFormStep('success'); // 👈 Move to success step
+        setFormData({ name: '', phone: '', email: '' }); // Clear form
         setConsent(false);
+        setOtp('');
       } else {
-        setError(data.error || 'Failed to submit. Please try again.');
+        setError(leadData.error || 'Failed to submit. Please try again.');
       }
     } catch (err) {
       setError('An error occurred. Please try again later.');
     } finally {
+      setVerifyingOtp(false);
       setLoading(false);
     }
   };
 
-  return (
+
+   return (
     <div className="lg:col-span-1">
       <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 sticky top-32">
         <div className="flex flex-col items-center border-b border-gray-200 pb-4 mb-4">
@@ -523,79 +607,165 @@ const ScheduleForm = () => {
           <p className="text-blue-800 font-semibold text-lg">TODAY</p>
         </div>
         
-        {success && (
-          <div className="mb-4 p-4 bg-green-100 text-green-800 rounded-lg text-center">
-            Thank you! We will be in touch shortly.
+        {/* 🌟 NEW: Success Step */}
+        {formStep === 'success' && (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check size={32} className="text-green-600" />
+            </div>
+            <h3 className="text-2xl font-semibold text-green-600 mb-4">
+              Thank You!
+            </h3>
+            <p className="text-gray-700">
+              We will be in touch shortly.
+            </p>
           </div>
         )}
 
         {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg text-center">
+          <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg text-center text-sm">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800"
-          />
-          <input
-            type="tel"
-            name="phone"
-            placeholder="Mobile number"
-            value={formData.phone}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800"
-          />
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+        {/* 🌟 NEW: Details Step */}
+        {formStep === 'details' && (
+          <form onSubmit={handleSendOTP} className="space-y-4">
+            {/* Name Field */}
             <input
-              type="checkbox"
-              id="whatsapp-consent"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              className="rounded text-blue-800 focus:ring-blue-800"
+              type="text"
+              name="name"
+              placeholder="Name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800"
+              required
             />
-            <label htmlFor="whatsapp-consent">
-              I agree to be contacted by WhatsApp, SMS, Email
-            </label>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#4299E1] text-white font-bold py-3 rounded-lg hover:bg-blue-900 transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Submitting...' : 'Submit'}
-          </button>
-        </form>
-        <div className="mt-6 flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-          <div className="w-12 h-12 flex items-center justify-center text-gray-500">
-            <PhoneIcon size={24} />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-800">
-              Rest assured, our expert will call you within the next 5 minutes.
-            </p>
-            <p className="text-xs text-gray-500">(during working hours)</p>
-          </div>
-        </div>
-        <div className="mt-4 text-center">
-          <a href="#" className="text-blue-800 text-sm hover:underline">
-            Read Disclaimer
-          </a>
-        </div>
+
+            {/* Phone Field */}
+            <input
+              type="tel"
+              name="phone"
+              placeholder="Mobile number"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800"
+              required
+              maxLength={10}
+            />
+
+            {/* Email Field */}
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800"
+              required
+            />
+
+            {/* Consent Checkbox */}
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                id="whatsapp-consent"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="rounded text-blue-800 focus:ring-blue-800"
+                required
+              />
+              <label htmlFor="whatsapp-consent">
+                I agree to be contacted by WhatsApp, SMS, Email
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={sendingOtp}
+              className="w-full bg-[#4299E1] text-white font-bold py-3 rounded-lg hover:bg-blue-900 transition-colors disabled:opacity-50"
+            >
+              {sendingOtp ? 'Sending OTP...' : 'Continue'}
+            </button>
+          </form>
+        )}
+
+        {/* 🌟 NEW: OTP Step */}
+        {formStep === 'otp' && (
+           <form onSubmit={handleVerifyAndSubmit} className="space-y-4">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  Enter the 6-digit OTP sent to <strong>{formData.phone}</strong>. 
+                  <button 
+                    type="button" 
+                    onClick={() => { setFormStep('details'); setError(null); }}
+                    className="ml-1 text-blue-600 hover:underline font-medium"
+                  >
+                    (Edit)
+                  </button>
+                </p>
+              </div>
+
+              {/* OTP Verification Field */}
+              <input
+                type="text"
+                placeholder="Enter 6-digit OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800"
+                maxLength={6}
+                required
+              />
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Didn't receive OTP?</span>
+                {resendTimer > 0 ? (
+                  <span className="text-gray-500">Resend in {resendTimer}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleSendOTP()} // Re-use the send OTP logic
+                    className="text-blue-600 font-semibold hover:underline"
+                    disabled={sendingOtp}
+                  >
+                    {sendingOtp ? 'Sending...' : 'Resend OTP'}
+                  </button>
+                )}
+              </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={verifyingOtp || loading || otp.length !== 6}
+              className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              {verifyingOtp || loading ? 'Verifying...' : 'Verify & Submit'}
+            </button>
+          </form>
+        )}
+
+        {/* This part shows regardless of step, unless it's success */}
+        {formStep !== 'success' && (
+          <>
+            <div className="mt-6 flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="w-12 h-12 flex items-center justify-center text-gray-500">
+                <PhoneIcon size={24} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-800">
+                  Rest assured, our expert will call you within the next 5 minutes.
+                </p>
+                <p className="text-xs text-gray-500">(during working hours)</p>
+              </div>
+            </div>
+            <div className="mt-4 text-center">
+              <a href="#" className="text-blue-800 text-sm hover:underline">
+                Read Disclaimer
+              </a>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

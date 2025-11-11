@@ -138,6 +138,39 @@ export const updateLeadStatus = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Delete a lead
+// @route   DELETE /api/leads/:id
+export const deleteLead = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const lead = await Lead.findById(id);
+
+    if (!lead) {
+      return res.status(404).json({
+        success: false,
+        error: 'Lead not found',
+      });
+    }
+
+    await Lead.findByIdAndDelete(id);
+
+    console.log(`✅ Deleted lead ${id} (${lead.name})`);
+    res.status(200).json({
+      success: true,
+      message: 'Lead deleted successfully',
+      data: { id },
+    });
+  } catch (error: any) {
+    console.error('❌ Error deleting lead:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Server Error',
+      message: error.message,
+    });
+  }
+};
+
 // @desc    Get Lead Statistics
 // @route   GET /api/leads/stats/all
 export const getLeadStats = async (req: Request, res: Response) => {

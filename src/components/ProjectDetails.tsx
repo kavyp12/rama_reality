@@ -61,11 +61,12 @@ const getYouTubeEmbedUrl = (url: string) => {
   }
   return '';
 };
+// In src/components/ProjectDetails.tsx, replace the entire `ProjectDetails` component with this:
 
 const ProjectDetails = () => {
   const { state, city, area, name } = useParams<{ state: string; city: string; area: string; name: string }>();
 
-  // ... (All refs, state, useEffects, and handlers remain exactly the same) ...
+  // ... (refs, project state, loading state, map refs, etc. remain the same) ...
   const overviewRef = useRef<HTMLDivElement>(null);
   const floorplanRef = useRef<HTMLDivElement>(null);
   const projectLocationRef = useRef<HTMLDivElement>(null);
@@ -75,7 +76,7 @@ const ProjectDetails = () => {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+    
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const mapRef = useRef<any>(null);
@@ -88,10 +89,18 @@ const ProjectDetails = () => {
   const [activeFloorPlanTab, setActiveFloorPlanTab] = useState('');
 
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-
-  // 検 2. STATE FOR THE RIGHT-SIDE CONTACT FORM
+  
+  // --- 🌟 CONTACT FORM STATES (MODIFIED) ---
   const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '' });
   const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+  const [contactFormStep, setContactFormStep] = useState<'details' | 'otp' | 'success'>('details');
+  const [otpContact, setOtpContact] = useState('');
+  const [sendingOtpContact, setSendingOtpContact] = useState(false);
+  const [verifyingOtpContact, setVerifyingOtpContact] = useState(false);
+  const [resendTimerContact, setResendTimerContact] = useState(0);
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [contactConsent, setContactConsent] = useState(true); // Added consent state
+  // --- 🌟 END CONTACT FORM STATES ---
 
   // 検 3. NEW STATE FOR FLOOR PLAN LOGIC
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
@@ -105,6 +114,7 @@ const ProjectDetails = () => {
   // 🌟 ADD STATE TO TRACK THE PENDING ACTION
   const [pendingAction, setPendingAction] = useState<'viewFloorPlan' | 'downloadBrochure' | null>(null);
 
+  // ... (useEffect for fetchProject, check isUserVerified, floorPlanGroups, map, and image handlers remain the same) ...
   useEffect(() => {
     const fetchProject = async () => {
       try {
@@ -279,39 +289,125 @@ const ProjectDetails = () => {
     }
   };
 
-  // 検 4. SUBMIT HANDLER FOR THE RIGHT-SIDE CONTACT FORM
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!project?._id) {
-      alert('Project ID not found. Cannot submit lead.');
+// 🌟 MODIFIED: Send OTP and move to next step
+const handleSendOTPContact = async (e?: React.FormEvent) => {
+  if (e) e.preventDefault();
+
+  if (!contactForm.phone || contactForm.phone.length < 10 || !contactForm.name || !contactForm.email) {
+    setContactError('Please fill in all fields.');
+    return;
+  }
+   if (!contactConsent) {
+      setContactError('Please agree to be contacted.');
       return;
     }
 
-    setIsSubmittingContact(true);
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/leads`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...contactForm,
-          projectId: project._id, // Attach the project ID
-        }),
-      });
+  setSendingOtpContact(true);
+  setContactError(null);
 
-      const data = await res.json();
-      if (data.success) {
-        alert('Thank you! We will contact you soon.');
-        setContactForm({ name: '', email: '', phone: '' }); // Clear form
-      } else {
-        alert('Submission failed: ' + (data.error || 'Please try again.'));
-      }
-    } catch (err) {
-      console.error('Error submitting lead:', err);
-      alert('An error occurred. Please try again.');
-    } finally {
-      setIsSubmittingContact(false);
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/otp/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: contactForm.phone }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      setContactFormStep('otp'); // 👈 Move to OTP step
+      setResendTimerContact(60);
+      
+      const interval = setInterval(() => {
+        setResendTimerContact((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      setContactError(null);
+    } else {
+      setContactError(data.error || 'Failed to send OTP');
     }
-  };
+  } catch (err) {
+    console.error('Error sending OTP:', err);
+    setContactError('Failed to send OTP. Please try again.');
+  } finally {
+    setSendingOtpContact(false);
+  }
+};
+
+// 🌟 MODIFIED: Verify OTP and then submit lead
+ const handleContactSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!otpContact || otpContact.length !== 6) {
+    setContactError('Please enter a valid 6-digit OTP');
+    return;
+  }
+
+  if (!project?._id) {
+    setContactError('Project ID not found. Cannot submit lead.');
+    return;
+  }
+
+  setVerifyingOtpContact(true);
+  setIsSubmittingContact(true);
+  setContactError(null);
+
+  try {
+    // 1. Verify OTP
+    const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/otp/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: contactForm.phone, code: otpContact }),
+    });
+
+    const verifyData = await verifyResponse.json();
+
+    if (!verifyData.success) {
+      setContactError(verifyData.error || 'Invalid OTP. Please try again.');
+      setVerifyingOtpContact(false);
+      setIsSubmittingContact(false);
+      return;
+    }
+
+    // 2. OTP is valid, submit lead
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/leads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...contactForm,
+        projectId: project._id,
+        source: 'Project Details Contact Form',
+      }),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setContactFormStep('success'); // 👈 Move to success step
+      // Reset form after a delay
+      setTimeout(() => {
+        setContactFormStep('details');
+        setContactForm({ name: '', email: '', phone: '' });
+        setOtpContact('');
+        setContactConsent(true); // Reset consent
+      }, 3000);
+      
+    } else {
+      setContactError('Submission failed: ' + (data.error || 'Please try again.'));
+    }
+  } catch (err) {
+    console.error('Error submitting lead:', err);
+    setContactError('An error occurred. Please try again.');
+  } finally {
+    setVerifyingOtpContact(false);
+    setIsSubmittingContact(false);
+  }
+};
 
   // 🌟 ADD HELPER FUNCTION TO TRIGGER DOWNLOAD
   const triggerBrochureDownload = () => {
@@ -414,9 +510,8 @@ const ProjectDetails = () => {
     return `${min} - ${max} Sq-ft`;
   };
 
-  // ... (The entire return (JSX) of the component remains the same from here on) ...
-  // ... It correctly uses the imported <LeadFormModal> ...
-  // ... No changes needed to the JSX ...
+
+  
 
   return (
     <>
@@ -680,9 +775,8 @@ const ProjectDetails = () => {
                 </div>
 
 
-                {/* ... (Overview, Video, Location, and Nearby sections remain exactly the same) ... */}
-
-                {/* Floor Plan Section */}
+                {/* ... (Floor Plan, Overview, Video, Location, and Nearby sections remain exactly the same) ... */}
+                                {/* Floor Plan Section */}
                 <div ref={floorplanRef} className="mb-12 pt-4">
                   <h2 className="text-2xl font-semibold mb-8 pb-4 border-b border-gray-200">Floor Plans</h2>
                   {floorPlanTabs && floorPlanTabs.length > 0 ? (
@@ -1174,98 +1268,187 @@ const ProjectDetails = () => {
                   )}
                 </div>
               </div>
-{/* Contact Form */}
-<div className="lg:col-span-1">
-  <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden sticky top-24">
 
-    {/* Header Section with Custom Red Background */}
-  <div className="bg-red-400 text-white p-6 text-center rounded-t-lg">
-  <h3 className="text-xl font-semibold mb-2">
-    Interested to buy Property in {project.area}?
-      </h3>
-    </div>
+              {/* 🌟 🌟 🌟 CONTACT FORM (MODIFIED) 🌟 🌟 🌟 */}
+              <div className="lg:col-span-1">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden sticky top-24">
+                  <div className="bg-red-400 text-white p-6 text-center rounded-t-lg">
+                    <h3 className="text-xl font-semibold mb-2">
+                      Interested to buy Property in {project.area}?
+                    </h3>
+                  </div>
 
-    {/* Form Section */}
-    <div className="p-6">
-      <form className="space-y-4" onSubmit={handleContactSubmit}>
-        <input
-          type="text"
-          placeholder="Name"
-          className="w-full p-3 border-b-2 border-gray-200 focus:border-[#4299E1] focus:outline-none placeholder-gray-400 bg-transparent transition-colors"
-          value={contactForm.name}
-          onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-          required
-        />
+                  <div className="p-6">
+                    {/* Error Message */}
+                    {contactError && (
+                      <p className="text-sm text-red-600 text-center bg-red-50 p-2 rounded mb-4">{contactError}</p>
+                    )}
 
-        <input
-          type="tel"
-          placeholder="Mobile number"
-          className="w-full p-3 border-b-2 border-gray-200 focus:border-[#4299E1] focus:outline-none placeholder-gray-400 bg-transparent transition-colors"
-          value={contactForm.phone}
-          onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-          required
-        />
+                    {/* 🌟 NEW: Success Step */}
+                    {contactFormStep === 'success' && (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Check size={32} className="text-green-600" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-green-600 mb-2">
+                          Thank You!
+                        </h3>
+                        <p className="text-gray-700">
+                          Our expert will contact you shortly.
+                        </p>
+                      </div>
+                    )}
 
-        <input
-          type="email"
-          placeholder="Email Address"
-          className="w-full p-3 border-b-2 border-gray-200 focus:border-[#4299E1] focus:outline-none placeholder-gray-400 bg-transparent transition-colors"
-          value={contactForm.email}
-          onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-          required
-        />
+                    {/* 🌟 NEW: Details Step */}
+                    {contactFormStep === 'details' && (
+                      <form className="space-y-4" onSubmit={handleSendOTPContact}>
+                        {/* Name Field */}
+                        <input
+                          type="text"
+                          name="name"
+                          placeholder="Name"
+                          className="w-full p-3 border-b-2 border-gray-200 focus:border-[#4299E1] focus:outline-none placeholder-gray-400 bg-transparent transition-colors"
+                          value={contactForm.name}
+                          onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                          required
+                        />
 
-        <div className="flex items-start gap-2 pt-2">
-          <input
-            id="agree"
-            type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-gray-300 text-[#4299E1] focus:ring-[#4299E1]"
-            defaultChecked
-          />
-          <label htmlFor="agree" className="text-xs text-gray-600">
-            I agree to be contacted by Vitalspace via WhatsApp, SMS, Phone, Email, etc.
-          </label>
-        </div>
+                        {/* Phone Field */}
+                        <input
+                          type="tel"
+                          name="phone"
+                          placeholder="Mobile number"
+                          className="w-full p-3 border-b-2 border-gray-200 focus:border-[#4299E1] focus:outline-none placeholder-gray-400 bg-transparent transition-colors"
+                          value={contactForm.phone}
+                          onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                          required
+                          maxLength={10}
+                        />
 
-        {/* ✅ Submit Button Updated */}
-        <button
-          type="submit"
-          className="w-full border-2 border-blue-700 text-blue-700 font-semibold py-3 rounded-lg hover:bg-blue-700 hover:text-white transition-all disabled:opacity-50"
-          disabled={isSubmittingContact}
-        >
-          {isSubmittingContact ? 'Submitting...' : 'Submit'}
-        </button>
-      </form>
+                        {/* Email Field */}
+                        <input
+                          type="email"
+                          name="email"
+                          placeholder="Email Address"
+                          className="w-full p-3 border-b-2 border-gray-200 focus:border-[#4299E1] focus:outline-none placeholder-gray-400 bg-transparent transition-colors"
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                          required
+                        />
 
-      {/* Rest Assured Section */}
-      <div className="flex items-start gap-3 mt-6">
-        <div className="flex-shrink-0">
-          <svg className="w-12 h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            />
-          </svg>
-        </div>
-        <div>
-          <p className="text-sm text-gray-700 leading-relaxed">
-            Rest assured, you'll receive a call from our sales expert within the next 5 minutes. (within working hours)
-          </p>
-        </div>
-      </div>
+                        {/* Consent Checkbox */}
+                        <div className="flex items-start gap-2 pt-2">
+                          <input
+                            id="agree"
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 rounded border-gray-300 text-[#4299E1] focus:ring-[#4299E1]"
+                            checked={contactConsent}
+                            onChange={(e) => setContactConsent(e.target.checked)}
+                            required
+                          />
+                          <label htmlFor="agree" className="text-xs text-gray-600">
+                            I agree to be contacted by Vitalspace via WhatsApp, SMS, Phone, Email, etc.
+                          </label>
+                        </div>
 
-      <div className="text-center mt-6">
-        <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
-          <Shield size={12} />
-          <span>100% Safe & Secure</span>
-        </div>
-      </div>
+                        {/* Submit Button */}
+                        <button
+                          type="submit"
+                          className="w-full border-2 border-blue-700 text-blue-700 font-semibold py-3 rounded-lg hover:bg-blue-700 hover:text-white transition-all disabled:opacity-50"
+                          disabled={sendingOtpContact}
+                        >
+                          {sendingOtpContact ? 'Sending OTP...' : 'Continue'}
+                        </button>
+                      </form>
+                    )}
 
-    </div>
-  </div>
+                    {/* 🌟 NEW: OTP Step */}
+                    {contactFormStep === 'otp' && (
+                      <form className="space-y-4" onSubmit={handleContactSubmit}>
+                        <div className="p-2 bg-gray-100 rounded-lg">
+                          <p className="text-sm text-gray-700">
+                            Enter the 6-digit OTP sent to <strong>{contactForm.phone}</strong>. 
+                            <button 
+                              type="button" 
+                              onClick={() => { setContactFormStep('details'); setContactError(null); }}
+                              className="ml-1 text-blue-600 hover:underline font-medium"
+                            >
+                              (Edit)
+                            </button>
+                          </p>
+                        </div>
 
+                        {/* OTP Verification Field */}
+                        <input
+                          type="text"
+                          placeholder="Enter 6-digit OTP"
+                          value={otpContact}
+                          onChange={(e) => setOtpContact(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-full p-3 border-b-2 border-gray-200 focus:border-[#4299E1] focus:outline-none placeholder-gray-400 bg-transparent transition-colors"
+                          maxLength={6}
+                          required
+                        />
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Didn't receive OTP?</span>
+                          {resendTimerContact > 0 ? (
+                            <span className="text-gray-500">Resend in {resendTimerContact}s</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleSendOTPContact()}
+                              className="text-blue-600 font-semibold hover:underline"
+                              disabled={sendingOtpContact}
+                            >
+                              {sendingOtpContact ? 'Sending...' : 'Resend OTP'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                          type="submit"
+                          className="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
+                          disabled={isSubmittingContact || verifyingOtpContact || otpContact.length !== 6}
+                        >
+                          {isSubmittingContact || verifyingOtpContact ? 'Verifying...' : 'Verify & Submit'}
+                        </button>
+                      </form>
+                    )}
+
+                    {/* This part shows regardless of step, unless it's success */}
+                    {contactFormStep !== 'success' && (
+                      <>
+                        {/* Rest Assured Section */}
+                        <div className="flex items-start gap-3 mt-6">
+                          <div className="flex-shrink-0">
+                            <svg className="w-12 h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              Rest assured, you'll receive a call from our sales expert within the next 5 minutes. (within working hours)
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-center mt-6">
+                          <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
+                            <Shield size={12} />
+                            <span>100% Safe & Secure</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1289,16 +1472,19 @@ const ProjectDetails = () => {
 
             {/* Scrollable Image Grid */}
             <div className="flex-1 overflow-y-auto hide-scrollbar p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
+              {/* 🌟 FIX 1: Changed 'grid' to 'columns' for a masonry layout */}
+              <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 max-w-7xl mx-auto">
                 {project.heroImages?.map((img, index) => (
                   <div
                     key={index}
-                    className="group rounded-lg overflow-hidden aspect-w-16 aspect-h-9"
+                    // 🌟 FIX 2: Removed aspect-ratio, added margin-bottom and break-inside-avoid
+                    className="group rounded-lg overflow-hidden mb-4 break-inside-avoid"
                   >
                     <img
                       src={img}
                       alt={`Project photo ${index + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      // 🌟 FIX 3: Changed 'h-full object-cover' to 'h-auto'
+                      className="w-full h-auto group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                 ))}
@@ -1368,5 +1554,4 @@ const ProjectDetails = () => {
     </>
   );
 };
-
 export default ProjectDetails;
