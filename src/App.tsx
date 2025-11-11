@@ -4,12 +4,18 @@ import { Toaster as Sonner } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+// --- Context Provider ---
+import { WishlistProvider } from './context/WishilistContext'; // 👈 1. IMPORT WISHLIST PROVIDER
+
+// --- Public Pages ---
 import Index from './pages/index';
 import FilterResults from './pages/buy/filters';
-import ProjectDetails from './components/ProjectDetails'; // Assuming this is correct
-import NotFound from './components/NotFound'; // Assuming this exists
+import ProjectDetails from './components/ProjectDetails';
+import NotFound from './components/NotFound';
 import ListProjectPage from './pages/sell/ListProjectPage';
 import PropertyMap from './pages/mapporperty';
+import WishlistPage from './pages/WishlistPage'; // 👈 2. IMPORT WISHLIST PAGE
 
 // --- Admin Imports ---
 import AdminLayout from './components/AdminLayout';
@@ -18,8 +24,7 @@ import AddProject from './pages/admin/add-project';
 import AdminProjectList from './pages/admin/AdminProjectList';
 import EditProject from './pages/admin/EditProject';
 import AdminLeadList from './pages/admin/AdminLeadList';
-import AdminFilterManagement from './pages/admin/AdminFilter'; // 🌟 ADD THIS
-
+import AdminFilterManagement from './pages/admin/AdminFilter';
 
 // --- Super Admin Imports ---
 import SuperAdminLayout from './pages/admin/superadmin/SuperAdminLayout';
@@ -32,38 +37,41 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* --- Public Routes --- */}
-          <Route path="/" element={<Index />} />
-          <Route path="/Properties" element={<FilterResults />} />
-          {/* Keep your existing project routes */}
-          <Route path="/project/:id" element={<ProjectDetails />} />
-          <Route path="/:state/:city/:area/:name" element={<ProjectDetails />} />
-          <Route path="/map" element={<PropertyMap />} />
-          <Route path="/sell" element={<ListProjectPage />} />
+      <WishlistProvider> {/* 👈 3. WRAP YOUR ROUTER */}
+        <BrowserRouter>
+          <Routes>
+            {/* --- Public Routes --- */}
+            <Route path="/" element={<Index />} />
+            <Route path="/Properties" element={<FilterResults />} />
+            <Route path="/wishlist" element={<WishlistPage />} /> {/* 👈 4. ADD THE ROUTE */}
+            
+            {/* Keep your existing project routes */}
+            <Route path="/project/:id" element={<ProjectDetails />} />
+            <Route path="/:state/:city/:area/:name" element={<ProjectDetails />} />
+            <Route path="/map" element={<PropertyMap />} />
+            <Route path="/sell" element={<ListProjectPage />} />
 
-          {/* --- Admin Routes --- */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="projects" element={<AdminProjectList />} />
-            <Route path="add-project" element={<AddProject />} />
-            <Route path="edit-project/:id" element={<EditProject />} />
-            <Route path="filters" element={<AdminFilterManagement />} /> {/* 🌟 ADD THIS */}
+            {/* --- Admin Routes --- */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="projects" element={<AdminProjectList />} />
+              <Route path="add-project" element={<AddProject />} />
+              <Route path="edit-project/:id" element={<EditProject />} />
+              <Route path="filters" element={<AdminFilterManagement />} /> 
+              <Route path="leads" element={<AdminLeadList />} />
+            </Route>
+            
+            {/* --- Super Admin Routes --- */}
+            <Route path="/superadmin" element={<SuperAdminLayout />}>
+              <Route index element={<SuperAdminDashboard />} />
+              {/* Add more super admin routes here if needed */}
+            </Route>
 
-            <Route path="leads" element={<AdminLeadList />} />
-          </Route>
-          
-          {/* --- Super Admin Routes --- */}
-          <Route path="/superadmin" element={<SuperAdminLayout />}>
-            <Route index element={<SuperAdminDashboard />} />
-            {/* Add more super admin routes here if needed */}
-          </Route>
-
-          {/* 404 Page */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+            {/* 404 Page */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </WishlistProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

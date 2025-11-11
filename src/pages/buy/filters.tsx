@@ -4,18 +4,16 @@ import { useParams, Link, useLocation } from "react-router-dom";
 
 import Navbar from '../../components/Navbar';
 import { 
-    HeartIcon, ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, 
+    HeartIcon, // 👈 Outline
+    ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, 
     PhoneIcon, MessageCircleIcon, XIcon, SearchIcon, CheckCircleIcon, 
     BedIcon, BathIcon, HomeIcon, MailIcon 
 } from 'lucide-react';
+import { Heart as HeartIconFilled } from 'lucide-react'; // 👈 Filled
 import { FaWhatsapp } from 'react-icons/fa';
-
-// ❌ REMOVE THIS HARDCODED CONSTANT:
-// const filterOptions = {
-//     localities: ['Adani Shantigram', 'Ambawadi', ...],
-//     ...
-// };
-
+import { useWishlist } from '../../context/WishilistContext'; // 👈 Import the hook
+// ... (defaultFilterOptions, initialFilters, navbarFilterMap, utility functions: parsePrice, getPriceRange, getPossessionMonths, matchesBHK, matchesPropertyType, matchesPossession)
+// ... (All these functions remain EXACTLY the same as in your file)
 // ✅ ADD DEFAULT FILTER OPTIONS (fallback if API fails)
 const defaultFilterOptions = {
     localities: [],
@@ -141,7 +139,8 @@ const matchesPossession = (project: any, possessionFilters: string[]): boolean =
     });
 };
 
-// --- TAG FILTER DROPDOWN (keep existing component) ---
+
+// --- TAG FILTER DROPDOWN (Unchanged) ---
 const TagFilterDropdown = ({
     label,
     options,
@@ -155,6 +154,9 @@ const TagFilterDropdown = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    
+    // Check for 'Sort By' label
+    const isSortBy = label.toLowerCase().includes('sort by');
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -167,7 +169,6 @@ const TagFilterDropdown = ({
     }, []);
 
     const handleTagClick = (option: string) => {
-        const isSortBy = label.toLowerCase().includes('sort by');
         const newSelected = isSortBy
             ? [option]
             : selected.includes(option)
@@ -177,11 +178,10 @@ const TagFilterDropdown = ({
     };
 
     const clearSelection = () => {
-        onChange(label.toLowerCase().includes('sort by') ? ['Relevance'] : []);
+        onChange(isSortBy ? ['Relevance'] : []);
     };
 
     const getDisplayLabel = () => {
-        const isSortBy = label.toLowerCase().includes('sort by');
         if (isSortBy && selected.length > 0) {
             return `Sort By: ${selected[0]}`;
         }
@@ -191,7 +191,7 @@ const TagFilterDropdown = ({
         return label;
     };
 
-    const isActive = selected.length > 0 && !(label.toLowerCase().includes('sort by') && selected[0] === 'Relevance');
+    const isActive = selected.length > 0 && !(isSortBy && selected[0] === 'Relevance');
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -205,8 +205,17 @@ const TagFilterDropdown = ({
                 <ChevronDownIcon size={16} />
             </button>
             {isOpen && (
-                <div className="absolute top-full mt-2 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-20 p-4">
-                    <div className={`grid ${label === 'BHK' ? 'grid-cols-4' : 'grid-cols-3'} gap-3 max-h-80 overflow-y-auto`}>
+                <div className={`
+                    absolute top-full mt-2 bg-white rounded-lg shadow-2xl border border-gray-200 z-20 p-4
+                    ${isSortBy ? 'right-0 w-72' : 'w-96'} 
+                `}>
+                    <div className={`
+                        grid gap-3 max-h-80 overflow-y-auto
+                        ${label === 'BHK' ? 'grid-cols-4' 
+                          : isSortBy ? 'grid-cols-2' 
+                          : 'grid-cols-3'
+                        }
+                    `}>
                         {options.map(option => (
                             <button
                                 key={option}
@@ -233,7 +242,8 @@ const TagFilterDropdown = ({
     );
 };
 
-// --- BUDGET DROPDOWN (keep existing component) ---
+
+// --- BUDGET DROPDOWN (Unchanged) ---
 const BudgetDropdown = ({
     label,
     selected,
@@ -328,13 +338,31 @@ const BudgetDropdown = ({
     );
 };
 
-// --- FLAT CARD (keep existing component) ---
-const FlatCard = ({ flat }: { flat: any }) => {
+
+// --- FLAT CARD (MODIFIED) ---
+// ❗️ We add "export" so we can use this component on the new Wishlist page
+export const FlatCard = ({ flat }: { flat: any }) => {
     const firstConfig = flat.configurations?.[0] || {};
     const bhkMatch = firstConfig.type?.match(/(\d+)\s*BHK/i);
     const bedCount = bhkMatch ? bhkMatch[1] : (flat.bhk ? flat.bhk.split(' ')[0] : 'N/A');
     const propertyType = firstConfig.type?.split(' ').pop() || 'Property';
     const imageCount = flat.heroImages?.length || 1;
+
+    // 👈 Get wishlist functions
+    const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
+    
+    // 👈 Check if this card is already wishlisted (use flat._id)
+    const isSaved = isWishlisted(flat._id); 
+
+    const handleWishlistToggle = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent link navigation if heart is clicked
+        e.stopPropagation(); // Stop event bubbling
+        if (isSaved) {
+            removeFromWishlist(flat._id);
+        } else {
+            addToWishlist(flat._id);
+        }
+    };
 
     return (
         <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col sm:flex-row h-auto sm:h-[290px]">
@@ -350,8 +378,16 @@ const FlatCard = ({ flat }: { flat: any }) => {
                     <CheckCircleIcon size={14} className="text-blue-700" />
                     Verified
                 </div>
-                <button className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-2 rounded-lg hover:bg-white transition-colors">
-                    <HeartIcon size={20} className="text-gray-800" />
+                {/* 👇 MODIFIED BUTTON */}
+                <button 
+                    onClick={handleWishlistToggle}
+                    className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-2 rounded-lg hover:bg-white transition-colors z-10"
+                >
+                    {isSaved ? (
+                        <HeartIconFilled size={20} className="text-red-500 fill-red-500" />
+                    ) : (
+                        <HeartIcon size={20} className="text-gray-800" />
+                    )}
                 </button>
                 <div className="absolute bottom-3 left-3 bg-black/50 text-white text-xs font-medium py-1 px-2.5 rounded-md">
                     1 / {imageCount}
@@ -414,7 +450,8 @@ const FlatCard = ({ flat }: { flat: any }) => {
     );
 };
 
-// --- SCHEDULE FORM (keep existing component) ---
+
+// --- SCHEDULE FORM (Unchanged) ---
 const ScheduleForm = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -564,7 +601,8 @@ const ScheduleForm = () => {
   );
 };
 
-// --- MAIN PAGE COMPONENT ---
+
+// --- MAIN PAGE COMPONENT (Unchanged logic, just uses the components from above) ---
 export default function FilterResults() {
     const params = useParams();
     const location = useLocation();

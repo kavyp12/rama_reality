@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar'; // Assuming Navbar is at src/components/Navbar.tsx
-import { LayoutDashboard, List, Users, PlusCircle } from 'lucide-react';
+import { LayoutDashboard, List, Users, PlusCircle, Filter } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
@@ -12,6 +12,7 @@ const AdminLayout: React.FC = () => {
     { name: 'Projects', href: '/admin/projects', icon: List },
     { name: 'Leads', href: '/admin/leads', icon: Users },
     { name: 'Add Project', href: '/admin/add-project', icon: PlusCircle },
+    { name: 'Filters', href: '/admin/filters', icon:Filter  },
   ];
 
   return (

@@ -4,8 +4,9 @@ import {
   ChevronDown,
   Menu,
   X,
+  Heart, // 👈 Import Heart
 } from "lucide-react";
-
+import { useWishlist } from '../context/WishilistContext'; // 👈 Import the hook
 const popularChoices = [
   { label: "Ready To Move", slug: "ready-to-move" },
   { label: "Possession within 1 year", slug: "possession-within-1-year" },
@@ -42,6 +43,7 @@ const Navbar = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
 
   const buyRef = useRef(null);
+  const { wishlist } = useWishlist(); // 👈 Get wishlist count
 
   // ✅ Hide on scroll logic
   useEffect(() => {
@@ -61,8 +63,8 @@ const Navbar = () => {
 
   // ✅ Click outside to close BUY menu
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (buyRef.current && !buyRef.current.contains(e.target)) {
+    function handleClickOutside(e: any) {
+      if (buyRef.current && !(buyRef.current as any).contains(e.target)) {
         setIsBuyDropdownOpen(false);
       }
     }
@@ -162,7 +164,7 @@ const Navbar = () => {
           {/* ✅ RIGHT DESKTOP BUTTONS */}
           <div className="hidden lg:flex items-center space-x-5">
 
-            {/* ✅ ADMIN BUTTON */}
+            {/* ✅ WISHLIST BUTTON (Replaces Admin) */}
             <a
               href="/admin"
               className="text-[15px] font-semibold hover:text-gray-900"
@@ -172,9 +174,25 @@ const Navbar = () => {
             </a>
 
             {/* <a className="text-[15px] font-semibold" style={{ color: PRIMARY }}>myReality</a> */}
-            <a className="rounded-lg px-4 py-2 text-white" style={{ backgroundColor: PRIMARY }}>
-              Sign up or Log in
-            </a>
+          <Link
+  to="/wishlist"
+  className="flex items-center gap-2 p-2 text-gray-700 hover:text-red-500"
+>
+  <Heart className="h-6 w-6" />
+
+  {/* Wishlist Text */}
+  <span className="font-medium">
+    Wishlist
+  </span>
+
+  {/* Wishlist Counter */}
+  {wishlist.length > 0 && (
+    <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-500 rounded-full">
+      {wishlist.length}
+    </span>
+  )}
+</Link>
+
           </div>
 
           {/* ✅ MOBILE MENU BUTTON */}
@@ -233,14 +251,22 @@ const Navbar = () => {
           <a className="block py-2">Explore</a>
           <a className="block py-2">New Projects</a>
 
-          {/* ✅ ADMIN BUTTON MOBILE */}
-          <a
-            href="http://51.20.85.130/admin"
-            className="block py-2 font-semibold"
-            target="_blank"
+          {/* ✅ WISHLIST BUTTON MOBILE (Replaces Admin) */}
+          <Link
+            to="/wishlist"
+            className="flex justify-between items-center py-2 font-semibold"
+            onClick={() => setIsMobileMenuOpen(false)}
           >
-            Admin
-          </a>
+            <span>My Wishlist</span>
+            <div className="relative p-2">
+              <Heart className="h-6 w-6 text-gray-700" />
+              {wishlist.length > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                  {wishlist.length}
+                </span>
+              )}
+            </div>
+          </Link>
 
           <hr className="my-3" />
 
