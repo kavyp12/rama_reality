@@ -1,13 +1,15 @@
 // src/pages/admin/AdminDashboard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { List, Users, PlusCircle } from 'lucide-react';
+import { List, Users, PlusCircle, Filter } from 'lucide-react';
 
 const AdminDashboard = () => {
   const stats = [
     { name: 'Manage Projects', href: '/admin/projects', icon: List, desc: 'Edit, delete, or view all projects' },
     { name: 'Manage Leads', href: '/admin/leads', icon: Users, desc: 'View and follow up on new leads' },
     { name: 'Add New Project', href: '/admin/add-project', icon: PlusCircle, desc: 'Create a new project listing' },
+    { name: 'Manage Filters', href: '/admin/filters', icon: Filter, desc: 'Customize filter options for users' },
+
   ];
 
   return (

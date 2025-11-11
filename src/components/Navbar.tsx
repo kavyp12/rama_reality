@@ -153,7 +153,7 @@ const Navbar = () => {
             </div>
 
             {/* Other Links */}
-            <Link className="text-[15px] font-medium hover:text-gray-900" to="/buy/all">All Properties</Link>
+            <Link className="text-[15px] font-medium hover:text-gray-900" to="/Properties">All Properties</Link>
             {["Sell", "Explore", "New Projects"].map((i) => (
               <a key={i} className="text-[15px] font-medium hover:text-gray-900">{i}</a>
             ))}
@@ -228,7 +228,7 @@ const Navbar = () => {
           </div>
 
           {/* ✅ Other mobile links */}
-          <Link className="block py-2" to="/buy/all">All Properties</Link>
+          <Link className="block py-2" to="/Properties">All Properties</Link>
           <a className="block py-2">Sell</a>
           <a className="block py-2">Explore</a>
           <a className="block py-2">New Projects</a>

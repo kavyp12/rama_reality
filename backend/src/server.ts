@@ -170,6 +170,7 @@ import projectRoutes from './routes/projects';
 import uploadRoutes from './routes/upload';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import leadRoutes from './routes/leadRoutes';
+import filterOptionRoutes from './routes/filterOptions'; // 🌟 ADD THIS
 
 dotenv.config();
 
@@ -228,6 +229,8 @@ app.get('/', (req, res) => {
 app.use('/api/projects', projectRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/api/filter-options', filterOptionRoutes); // 🌟 ADD THIS
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

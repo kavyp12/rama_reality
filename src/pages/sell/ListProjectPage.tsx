@@ -161,7 +161,7 @@ const ListProjectPage = () => {
             });
             if (!response.ok) throw new Error('Server responded with an error.');
             alert('Project listed successfully!');
-            navigate('/buy/all');
+            navigate('/Properties');
         } catch (err: any) {
             setError(err.message || 'Failed to submit project. Please try again.');
         } finally {

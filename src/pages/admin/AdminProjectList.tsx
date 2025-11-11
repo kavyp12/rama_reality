@@ -263,7 +263,7 @@ const AdminProjectList = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
                             <Link 
-                              to={`/project/${project.slug}`} 
+                              to={`/${project.slug}`} 
                               title="View Project"
                               target="_blank"
                               className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"

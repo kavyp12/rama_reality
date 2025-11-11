@@ -921,7 +921,7 @@ export default function PropertyMap() {
 
     // Navigate using the new, clean slugs.
     // We no longer use encodeURIComponent because we have already manually formatted the strings for the URL.
-    navigate(`/project/${state}/${city}/${area}/${name}`);
+    navigate(`/${state}/${city}/${area}/${name}`);
   };
   // This function is now handled by the useEffect
   const handleSearch = () => {

@@ -18,6 +18,8 @@ import AddProject from './pages/admin/add-project';
 import AdminProjectList from './pages/admin/AdminProjectList';
 import EditProject from './pages/admin/EditProject';
 import AdminLeadList from './pages/admin/AdminLeadList';
+import AdminFilterManagement from './pages/admin/AdminFilter'; // 🌟 ADD THIS
+
 
 // --- Super Admin Imports ---
 import SuperAdminLayout from './pages/admin/superadmin/SuperAdminLayout';
@@ -34,10 +36,10 @@ const App = () => (
         <Routes>
           {/* --- Public Routes --- */}
           <Route path="/" element={<Index />} />
-          <Route path="/buy/*" element={<FilterResults />} />
+          <Route path="/Properties" element={<FilterResults />} />
           {/* Keep your existing project routes */}
           <Route path="/project/:id" element={<ProjectDetails />} />
-          <Route path="/project/:state/:city/:area/:name" element={<ProjectDetails />} />
+          <Route path="/:state/:city/:area/:name" element={<ProjectDetails />} />
           <Route path="/map" element={<PropertyMap />} />
           <Route path="/sell" element={<ListProjectPage />} />
 
@@ -47,6 +49,8 @@ const App = () => (
             <Route path="projects" element={<AdminProjectList />} />
             <Route path="add-project" element={<AddProject />} />
             <Route path="edit-project/:id" element={<EditProject />} />
+            <Route path="filters" element={<AdminFilterManagement />} /> {/* 🌟 ADD THIS */}
+
             <Route path="leads" element={<AdminLeadList />} />
           </Route>
           

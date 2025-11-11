@@ -1,5 +1,7 @@
+// src/pages/filters.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
+
 import Navbar from '../../components/Navbar';
 import { 
     HeartIcon, ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, 
@@ -8,22 +10,20 @@ import {
 } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 
+// ❌ REMOVE THIS HARDCODED CONSTANT:
+// const filterOptions = {
+//     localities: ['Adani Shantigram', 'Ambawadi', ...],
+//     ...
+// };
 
-// --- FILTER DATA CONSTANTS ---
-const filterOptions = {
-    localities: [
-        'Adani Shantigram', 'Ambawadi', 'Bhadaj', 'Bodakdev', 'Bopal', 'Central Bopal',
-        'Chandkheda', 'Ambli', 'Chharodi', 'Hebatpur', 'Jagatpur', 'Koteshwer', 'Maninagar',
-        'Ghuma', 'Isanpur', 'Jodhpur', 'Gota', 'Iscon ambli', 'Khoraj', 'Linkin Road',
-        'Nana Chiloda', 'Makarba', 'Naranpura', 'Narol', 'Navrangpura', 'New Ranip', 'Ognaj',
-        'New Maninagar', 'Paldi', 'Panjrapole', 'Prahlad Nagar', 'Sabarmati', 'Sanand',
-        'Sanathal', 'Satellite', 'Science City', 'Science Park', 'SG highway', 'Shela Shilaj',
-        'Sindhubhavan Road', 'Sola', 'South Bopal', 'Thaltej', 'Tragad', 'Vaishnodevi',
-        'Zundal', 'Vastrapur', 'Shela'
-    ], 
-    bhk: ['1 BHK', '2 BHK', '3 BHK', '4 BHK', '5 BHK', '6 BHK', '7 BHK'],
+// ✅ ADD DEFAULT FILTER OPTIONS (fallback if API fails)
+const defaultFilterOptions = {
+    localities: [],
+    cities: [],
+    states: [],
+    bhk: [],
     possession: ['Ready to Move', 'Upto 1 Year', 'Upto 2 Years', '2+ Years'],
-    propertyType: ['Flat', 'Penthouse', 'Duplex', 'Villa', 'House'],
+    propertyType: [],
     sortBy: ['Relevance', 'New Launch', 'Price: Low to High', 'Price: High to Low', 'Near Possession']
 };
 
@@ -59,7 +59,7 @@ const navbarFilterMap: { [key: string]: Partial<typeof initialFilters> } = {
     'above-3-cr': { budget: { min: '300', max: '' } }
 };
 
-// --- UTILITY FUNCTIONS ---
+// --- UTILITY FUNCTIONS (keep all existing utility functions) ---
 const parsePrice = (priceStr: string | null): number => {
     if (!priceStr || priceStr.toLowerCase().includes('request')) return 0;
     const cleanStr = priceStr.replace(/[₹,\s]/g, '').toLowerCase();
@@ -141,7 +141,7 @@ const matchesPossession = (project: any, possessionFilters: string[]): boolean =
     });
 };
 
-// --- TAG FILTER DROPDOWN ---
+// --- TAG FILTER DROPDOWN (keep existing component) ---
 const TagFilterDropdown = ({
     label,
     options,
@@ -233,7 +233,7 @@ const TagFilterDropdown = ({
     );
 };
 
-// --- BUDGET DROPDOWN ---
+// --- BUDGET DROPDOWN (keep existing component) ---
 const BudgetDropdown = ({
     label,
     selected,
@@ -328,68 +328,52 @@ const BudgetDropdown = ({
     );
 };
 
-// --- FLAT CARD ---
+// --- FLAT CARD (keep existing component) ---
 const FlatCard = ({ flat }: { flat: any }) => {
     const firstConfig = flat.configurations?.[0] || {};
     const bhkMatch = firstConfig.type?.match(/(\d+)\s*BHK/i);
     const bedCount = bhkMatch ? bhkMatch[1] : (flat.bhk ? flat.bhk.split(' ')[0] : 'N/A');
     const propertyType = firstConfig.type?.split(' ').pop() || 'Property';
+    const imageCount = flat.heroImages?.length || 1;
 
     return (
         <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col sm:flex-row h-auto sm:h-[290px]">
-            {/* Image Section */}
             <div className="sm:w-2/5 relative h-64 sm:h-full flex-shrink-0">
-              <Link to={`/project/${flat.slug}`} className="block h-full">
+              <Link to={`/${flat.slug}`} className="block h-full">
                     <img 
                         src={flat.image} 
                         alt={flat.name} 
                         className="w-full h-full object-cover" 
                     />
                 </Link>
-                
-                {/* Verified Badge */}
                 <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-blue-700 text-xs font-semibold py-1.5 px-3 rounded-md flex items-center gap-1">
                     <CheckCircleIcon size={14} className="text-blue-700" />
                     Verified
                 </div>
-                
-                {/* Heart Icon */}
                 <button className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-2 rounded-lg hover:bg-white transition-colors">
                     <HeartIcon size={20} className="text-gray-800" />
                 </button>
-
-                {/* Image Count */}
                 <div className="absolute bottom-3 left-3 bg-black/50 text-white text-xs font-medium py-1 px-2.5 rounded-md">
-                    1 / 10
+                    1 / {imageCount}
                 </div>
             </div>
 
-            {/* Details Section */}
             <div className="sm:w-3/5 p-6 flex flex-col justify-between">
                 <div className="flex-1">
-                    {/* Title */}
                     <h2 className="text-xl font-bold text-gray-800 hover:text-blue-800 transition-colors mb-1">
-                        <Link to={`/project/${flat.slug}`}>
+                        <Link to={`/${flat.slug}`}>
                             {flat.name}
                         </Link>
                     </h2>
-
-                    {/* Developer Name with "Made by" */}
                     <p className="text-sm text-gray-600 mb-3 tracking-wide">
                         <span className="normal-case">by </span>
                         <span className="font-bold uppercase">{flat.developer}</span>
                     </p>
-
-                    {/* Price */}
                     <div className="mb-1">
                         <span className="text-xl font-bold text-gray-900">{firstConfig.price || 'Price on Request'}</span>
                         <span className="text-sm text-gray-600 ml-2">{flat.status || ''}</span>
                     </div>
-
-                    {/* Property Type */}
                     <p className="text-sm font-semibold text-gray-800 mb-3">{propertyType}</p>
-
-                    {/* Specs */}
                     <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                         <div className="flex items-center gap-1.5">
                             <BedIcon size={18} className="text-gray-500" />
@@ -404,33 +388,23 @@ const FlatCard = ({ flat }: { flat: any }) => {
                             <span>{firstConfig.area || 'N/A'}</span>
                         </div>
                     </div>
-
-                    {/* Location */}
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         <MapPinIcon size={16} className="flex-shrink-0" />
                         <span className="line-clamp-2">{flat.description}</span>
                     </div>
                 </div>
-
-                {/* Bottom Bar: Contact + Builder Name */}
                 <div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-3">
                     <div className="flex items-center gap-2">
                         <button className="p-2.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-blue-800 transition-colors">
                             <MailIcon size={20} />
-                            <span className="sr-only">Email</span>
                         </button>
                         <button className="p-2.5 rounded-lg bg-gray-100 hover:bg-blue-100 text-blue-800 transition-colors">
                             <PhoneIcon size={20} />
-                            <span className="sr-only">Call</span>
                         </button>
                       <button className="p-2.5 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-colors">
                         <FaWhatsapp size={20} />
-                        <span className="sr-only">WhatsApp</span>
                     </button>
-
                     </div>
-
-                    {/* Builder Name in Corner */}
                     <div className="text-xs font-bold text-gray-700 uppercase tracking-wide truncate ml-2">
                         {flat.developer}
                     </div>
@@ -440,7 +414,7 @@ const FlatCard = ({ flat }: { flat: any }) => {
     );
 };
 
-// --- SCHEDULE FORM ---
+// --- SCHEDULE FORM (keep existing component) ---
 const ScheduleForm = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -482,7 +456,7 @@ const ScheduleForm = () => {
         },
         body: JSON.stringify({
           ...formData,
-          source: 'Filter Page Form', // We can set the source here
+          source: 'Filter Page Form',
         }),
       });
 
@@ -490,7 +464,7 @@ const ScheduleForm = () => {
 
       if (data.success) {
         setSuccess(true);
-        setFormData({ name: '', phone: '', email: '' }); // Reset form
+        setFormData({ name: '', phone: '', email: '' });
         setConsent(false);
       } else {
         setError(data.error || 'Failed to submit. Please try again.');
@@ -590,13 +564,16 @@ const ScheduleForm = () => {
   );
 };
 
-
 // --- MAIN PAGE COMPONENT ---
 export default function FilterResults() {
     const params = useParams();
+    const location = useLocation();
     const filterSlug = params['*']?.split('/')[0] || 'all';
 
-    // NEW: State for fetched projects
+    // 🌟 NEW: Dynamic filter options state
+    const [filterOptions, setFilterOptions] = useState(defaultFilterOptions);
+    const [loadingFilters, setLoadingFilters] = useState(true);
+    
     const [allProjects, setAllProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -613,7 +590,38 @@ export default function FilterResults() {
 
     const [filters, setFilters] = useState<typeof initialFilters>(initialFiltersWithSlug);
 
-    // NEW: Fetch all projects from API
+    // 🌟 NEW: Fetch dynamic filter options
+    useEffect(() => {
+        const fetchFilterOptions = async () => {
+            try {
+                setLoadingFilters(true);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/filter-options`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    setFilterOptions({
+                        localities: data.data.localities || [],
+                        cities: data.data.cities || [],
+                        states: data.data.states || [],
+                        bhk: data.data.bhk || [],
+                        possession: data.data.possession || ['Ready to Move', 'Upto 1 Year', 'Upto 2 Years', '2+ Years'],
+                        propertyType: data.data.propertyType || [],
+                        sortBy: data.data.sortBy || ['Relevance', 'New Launch', 'Price: Low to High', 'Price: High to Low', 'Near Possession']
+                    });
+                } else {
+                    console.error('Failed to load filter options:', data.error);
+                }
+            } catch (err) {
+                console.error('Error fetching filter options:', err);
+            } finally {
+                setLoadingFilters(false);
+            }
+        };
+
+        fetchFilterOptions();
+    }, []);
+
+    // Fetch all projects from API
     useEffect(() => {
         const fetchProjects = async () => {
             try {
@@ -747,7 +755,7 @@ export default function FilterResults() {
     }, [filters, filterSlug]);
 
     // Loading state
-    if (loading) {
+    if (loading || loadingFilters) {
         return (
             <>
                 <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -787,7 +795,6 @@ export default function FilterResults() {
         );
     }
 
-    // Rest of the component JSX remains the same
     return (
         <>
             <style>{`

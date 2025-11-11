@@ -371,6 +371,12 @@ const ProjectDetails = () => {
     );
   }
 
+  // ✅ --- FIX 1: DEFINE propertyType ---
+  // Get the property type (e.g., "Flat", "Villa")
+  const propertyType = project.overview?.propertyType || 
+                     project.configurations?.[0]?.type?.split(' ').pop() || 
+                     'Property';
+
   const tabs = ['Floor Plan', 'Overview', 'Video', 'Project Location', "What's Nearby?", 'Similar Properties'];
 
   const renderAboutText = (text: string) => {
@@ -442,14 +448,39 @@ const ProjectDetails = () => {
         <Navbar />
         <main className="pt-24 pb-12">
           <div className="container mx-auto px-4 lg:px-8">
-            {/* Breadcrumbs */}
-            <div className="flex items-center text-sm text-gray-500 mb-6">
+            
+            {/* ✅ --- FIX 2: UPDATED BREADCRUMBS --- */}
+            <div className="flex items-center text-sm text-gray-500 mb-6 flex-wrap">
               <Link to="/" className="hover:text-[#4299E1] transition-colors">Home</Link>
-              <ChevronRight className="mx-2 h-4 w-4" />
+              <ChevronRight className="mx-2 h-4 w-4 flex-shrink-0" />
+              
               <Link to="/properties" className="hover:text-[#4299E1] transition-colors">Properties</Link>
-              <ChevronRight className="mx-2 h-4 w-4" />
-              <span className="text-gray-700">{project.name}</span>
+              <ChevronRight className="mx-2 h-4 w-4 flex-shrink-0" />
+              
+              {/* NEW BREADCRUMB ITEM: Property Type in City */}
+              {project.city && (
+                <>
+                  <span className="text-gray-600">
+                    {propertyType} in {project.city}
+                  </span>
+                  <ChevronRight className="mx-2 h-4 w-4 flex-shrink-0" />
+                </>
+              )}
+
+              {/* NEW BREADCRUMB ITEM: Property Type in Area */}
+              {project.area && (
+                <>
+                  <span className="text-gray-600">
+                    {propertyType} in {project.area}
+                  </span>
+                  <ChevronRight className="mx-2 h-4 w-4 flex-shrink-0" />
+                </>
+              )}
+              
+              <span className="text-gray-700 font-medium">{project.name}</span>
             </div>
+            {/* --- END OF BREADCRUMB FIX --- */}
+
 
             {/* ... (Image Gallery, Main Project Info, RERA ID, and Tab Navigation sections remain exactly the same) ... */}
 
@@ -1036,10 +1067,10 @@ const ProjectDetails = () => {
                                   {/* Current Project Info */}
                                   <td className="px-4 py-3">
                                     <div className="flex flex-col">
-                                      <Link to={`/project/${project.slug}`} className="block overflow-hidden rounded-lg mb-3">
+                                      <Link to={`/${project.slug}`} className="block overflow-hidden rounded-lg mb-3">
                                         <img src={project.image} alt={project.name} className="w-full h-32 object-cover hover:scale-105 transition-transform" />
                                       </Link>
-                                      <Link to={`/project/${project.slug}`} className="text-base font-semibold text-gray-900 hover:text-blue-600">{project.name}</Link>
+                                      <Link to={`/${project.slug}`} className="text-base font-semibold text-gray-900 hover:text-blue-600">{project.name}</Link>
                                       <p className="text-sm text-gray-600">by {project.developer}</p>
                                       <div className="flex items-center gap-1 mt-1">
                                         <MapPin size={14} className="text-gray-500" />
@@ -1051,10 +1082,10 @@ const ProjectDetails = () => {
                                   {project.similarProjects.map((similar, index) => (
                                     <td key={index} className="px-4 py-3">
                                       <div className="flex flex-col">
-                                        <Link to={`/project/${similar.slug}`} className="block overflow-hidden rounded-lg mb-3">
+                                        <Link to={`/${similar.slug}`} className="block overflow-hidden rounded-lg mb-3">
                                           <img src={similar.image} alt={similar.name} className="w-full h-32 object-cover hover:scale-105 transition-transform" />
                                         </Link>
-                                        <Link to={`/project/${similar.slug}`} className="text-base font-semibold text-gray-900 hover:text-blue-600">{similar.name}</Link>
+                                        <Link to={`/${similar.slug}`} className="text-base font-semibold text-gray-900 hover:text-blue-600">{similar.name}</Link>
                                         <p className="text-sm text-gray-600">by {similar.developer}</p>
                                         <div className="flex items-center gap-1 mt-1">
                                           <MapPin size={14} className="text-gray-500" />
@@ -1120,7 +1151,7 @@ const ProjectDetails = () => {
                                   {project.similarProjects.map((similar, index) => (
                                     <td key={index} className="px-4 py-3">
                                       <Link
-                                        to={`/project/${similar.slug}`}
+                                        to={`/${similar.slug}`}
                                         className="inline-block bg-gray-800 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-900 transition-colors"
                                       >
                                         View Details
