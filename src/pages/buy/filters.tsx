@@ -4,18 +4,16 @@ import { useParams, Link, useLocation } from "react-router-dom";
 
 import Navbar from '../../components/Navbar';
 import { 
-    HeartIcon, // 👈 Outline
-    ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, 
+    HeartIcon, ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, 
     PhoneIcon, MessageCircleIcon, XIcon, SearchIcon, CheckCircleIcon, 
     BedIcon, BathIcon, HomeIcon, MailIcon 
 } from 'lucide-react';
-import { Heart as HeartIconFilled } from 'lucide-react'; // 👈 Filled
+import { Heart as HeartIconFilled } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { Check } from 'lucide-react';
 
-import { useWishlist } from '../../context/WishilistContext'; // 👈 Import the hook
+import { useWishlist } from '../../context/WishilistContext';
 
-// ✅ ADD DEFAULT FILTER OPTIONS (fallback if API fails)
 const defaultFilterOptions = {
     localities: [],
     cities: [],
@@ -36,7 +34,6 @@ const initialFilters = {
     searchQuery: '',
 };
 
-// --- MAPPING FOR NAVBAR FILTERS ---
 const navbarFilterMap: { [key: string]: Partial<typeof initialFilters> } = {
     'ready-to-move': { possession: ['Ready to Move'] },
     'possession-within-1-year': { possession: ['Upto 1 Year'] },
@@ -58,7 +55,6 @@ const navbarFilterMap: { [key: string]: Partial<typeof initialFilters> } = {
     'above-3-cr': { budget: { min: '300', max: '' } }
 };
 
-// --- UTILITY FUNCTIONS (keep all existing utility functions) ---
 const parsePrice = (priceStr: string | null): number => {
     if (!priceStr || priceStr.toLowerCase().includes('request')) return 0;
     const cleanStr = priceStr.replace(/[₹,\s]/g, '').toLowerCase();
@@ -82,28 +78,90 @@ const getPriceRange = (priceStr: string | null): { min: number; max: number } =>
     const price = parsePrice(priceStr);
     return { min: price, max: price };
 };
-
-const getPossessionMonths = (possession: string): number => {
-    const possessionLower = possession.toLowerCase();
-    if (possessionLower.includes('ready')) return 0;
+const getPossessionMonths = (project: any): number => {
+    // First, try to get the possessionDate from overview
+    const possessionDate = project.overview?.possessionDate;
+    
+    if (!possessionDate) {
+        // Fallback to old possession field if overview.possessionDate doesn't exist
+        const possessionLower = (project.possession || '').toLowerCase();
+        if (possessionLower.includes('ready')) return 0;
+        
+        const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+                            'july', 'august', 'september', 'october', 'november', 'december'];
+        for (let i = 0; i < monthNames.length; i++) {
+            if (possessionLower.includes(monthNames[i])) {
+                const yearMatch = project.possession.match(/\d{4}/);
+                if (yearMatch) {
+                    const year = parseInt(yearMatch[0]);
+                    const currentDate = new Date();
+                    const targetDate = new Date(year, i, 1);
+                    const diffInMonths = (targetDate.getFullYear() - currentDate.getFullYear()) * 12 +
+                                        (targetDate.getMonth() - currentDate.getMonth());
+                    return Math.max(0, diffInMonths);
+                }
+            }
+        }
+        if (possessionLower.includes('1 year') || possessionLower.includes('within 1')) return 12;
+        if (possessionLower.includes('2 year') || possessionLower.includes('within 2')) return 24;
+        if (possessionLower.includes('launch')) return 36;
+        return 36;
+    }
+    
+    // Parse the possessionDate (assuming format like "December 2025", "Dec 2025", "2025-12", etc.)
+    const dateLower = possessionDate.toLowerCase().trim();
+    
+    // Check if it's "ready to move" or similar
+    if (dateLower.includes('ready') || dateLower.includes('immediate')) {
+        return 0;
+    }
+    
+    const currentDate = new Date();
+    let targetDate: Date | null = null;
+    
+    // Month names for parsing
     const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
                         'july', 'august', 'september', 'october', 'november', 'december'];
+    const shortMonthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    
+    // Try to parse "Month YYYY" format (e.g., "December 2025")
     for (let i = 0; i < monthNames.length; i++) {
-        if (possessionLower.includes(monthNames[i])) {
-            const yearMatch = possession.match(/\d{4}/);
+        if (dateLower.includes(monthNames[i]) || dateLower.includes(shortMonthNames[i])) {
+            const yearMatch = possessionDate.match(/\d{4}/);
             if (yearMatch) {
                 const year = parseInt(yearMatch[0]);
-                const currentDate = new Date();
-                const targetDate = new Date(year, i, 1);
-                const diffInMonths = (targetDate.getFullYear() - currentDate.getFullYear()) * 12 +
-                                    (targetDate.getMonth() - currentDate.getMonth());
-                return Math.max(0, diffInMonths);
+                targetDate = new Date(year, i, 1);
+                break;
             }
         }
     }
-    if (possessionLower.includes('1 year') || possessionLower.includes('within 1')) return 12;
-    if (possessionLower.includes('2 year') || possessionLower.includes('within 2')) return 24;
-    if (possessionLower.includes('launch')) return 36;
+    
+    // If not found, try to parse ISO format or other date formats
+    if (!targetDate) {
+        const parsedDate = new Date(possessionDate);
+        if (!isNaN(parsedDate.getTime())) {
+            targetDate = parsedDate;
+        }
+    }
+    
+    // If still no valid date, try to extract year only
+    if (!targetDate) {
+        const yearMatch = possessionDate.match(/\d{4}/);
+        if (yearMatch) {
+            const year = parseInt(yearMatch[0]);
+            // Assume middle of the year (June) if only year is provided
+            targetDate = new Date(year, 5, 1);
+        }
+    }
+    
+    // If we have a valid target date, calculate months difference
+    if (targetDate && !isNaN(targetDate.getTime())) {
+        const diffInMonths = (targetDate.getFullYear() - currentDate.getFullYear()) * 12 +
+                            (targetDate.getMonth() - currentDate.getMonth());
+        return Math.max(0, diffInMonths);
+    }
+    
+    // Default to 36 months if we can't parse the date
     return 36;
 };
 
@@ -116,32 +174,47 @@ const matchesBHK = (project: any, bhkFilters: string[]): boolean => {
     if (project.bhk) projectBHKs.push(project.bhk);
     return projectBHKs.some((bhk: string) => bhkFilters.includes(bhk));
 };
+// src/pages/filters.tsx
 
 const matchesPropertyType = (project: any, typeFilters: string[]): boolean => {
     if (typeFilters.length === 0) return true;
-    const projectTypes = project.configurations.map((config: any) => {
-        const words = config.type.split(' ');
-        return words[words.length - 1];
-    });
-    return projectTypes.some((type: string) => typeFilters.includes(type));
+    
+    // ⬇️ MODIFIED: Check the project's overview.propertyType field directly
+    const rawType = project.overview?.propertyType;
+    if (!rawType) return false; // If project has no type, it doesn't match
+    
+    // ⬇️ MODIFIED: Standardize the project's type before checking
+    const standardizedType = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
+    
+    // Now it compares "Flat" (from filter) with "Flat" (from project)
+    return typeFilters.includes(standardizedType);
 };
 
 const matchesPossession = (project: any, possessionFilters: string[]): boolean => {
     if (possessionFilters.length === 0) return true;
-    const projectPossessionMonths = getPossessionMonths(project.possession);
+    
+    const projectPossessionMonths = getPossessionMonths(project);
+    
     return possessionFilters.some(filter => {
         switch (filter) {
-            case 'Ready to Move': return projectPossessionMonths === 0;
-            case 'Upto 1 Year': return projectPossessionMonths > 0 && projectPossessionMonths <= 12;
-            case 'Upto 2 Years': return projectPossessionMonths > 12 && projectPossessionMonths <= 24;
-            case '2+ Years': return projectPossessionMonths > 24;
-            default: return false;
+            case 'Ready to Move': 
+                // Ready to move: 0-3 months
+                return projectPossessionMonths >= 0 && projectPossessionMonths <= 3;
+            case 'Upto 1 Year': 
+                // More than 3 months but up to 12 months
+                return projectPossessionMonths > 3 && projectPossessionMonths <= 12;
+            case 'Upto 2 Years': 
+                // More than 12 months but up to 24 months
+                return projectPossessionMonths > 12 && projectPossessionMonths <= 24;
+            case '2+ Years': 
+                // More than 24 months
+                return projectPossessionMonths > 24;
+            default: 
+                return false;
         }
-    });
+    })
 };
 
-
-// --- TAG FILTER DROPDOWN (Unchanged) ---
 const TagFilterDropdown = ({
     label,
     options,
@@ -156,7 +229,6 @@ const TagFilterDropdown = ({
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     
-    // Check for 'Sort By' label
     const isSortBy = label.toLowerCase().includes('sort by');
 
     useEffect(() => {
@@ -243,8 +315,6 @@ const TagFilterDropdown = ({
     );
 };
 
-
-// --- BUDGET DROPDOWN (Unchanged) ---
 const BudgetDropdown = ({
     label,
     selected,
@@ -338,26 +408,23 @@ const BudgetDropdown = ({
         </div>
     );
 };
+// src/pages/filters.tsx
 
-
-// --- FLAT CARD (MODIFIED) ---
-// ❗️ We add "export" so we can use this component on the new Wishlist page
 export const FlatCard = ({ flat }: { flat: any }) => {
     const firstConfig = flat.configurations?.[0] || {};
     const bhkMatch = firstConfig.type?.match(/(\d+)\s*BHK/i);
     const bedCount = bhkMatch ? bhkMatch[1] : (flat.bhk ? flat.bhk.split(' ')[0] : 'N/A');
-    const propertyType = firstConfig.type?.split(' ').pop() || 'Property';
+    
+    const propertyType = flat.overview?.propertyType || 'Property';
+    // ...
     const imageCount = flat.heroImages?.length || 1;
 
-    // 👈 Get wishlist functions
     const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
-    
-    // 👈 Check if this card is already wishlisted (use flat._id)
     const isSaved = isWishlisted(flat._id); 
 
     const handleWishlistToggle = (e: React.MouseEvent) => {
-        e.preventDefault(); // Prevent link navigation if heart is clicked
-        e.stopPropagation(); // Stop event bubbling
+        e.preventDefault();
+        e.stopPropagation();
         if (isSaved) {
             removeFromWishlist(flat._id);
         } else {
@@ -379,7 +446,6 @@ export const FlatCard = ({ flat }: { flat: any }) => {
                     <CheckCircleIcon size={14} className="text-blue-700" />
                     Verified
                 </div>
-                {/* 👇 MODIFIED BUTTON */}
                 <button 
                     onClick={handleWishlistToggle}
                     className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-2 rounded-lg hover:bg-white transition-colors z-10"
@@ -451,8 +517,6 @@ export const FlatCard = ({ flat }: { flat: any }) => {
     );
 };
 
-
-// --- SCHEDULE FORM (MODIFIED FOR MULTI-STEP OTP) ---
 const ScheduleForm = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -463,11 +527,7 @@ const ScheduleForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  // 🌟 NEW: Form step state
   const [formStep, setFormStep] = useState<'details' | 'otp' | 'success'>('details');
-
-  // OTP States
   const [otp, setOtp] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
@@ -480,11 +540,9 @@ const ScheduleForm = () => {
     });
   };
 
-  // 🌟 MODIFIED: This just sends OTP and moves to the next step
   const handleSendOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
-    // Validation
     if (!formData.name || !formData.phone || !formData.email) {
       setError('Please fill in all fields.');
       return;
@@ -511,7 +569,7 @@ const ScheduleForm = () => {
       const data = await response.json();
 
       if (data.success) {
-        setFormStep('otp'); // 👈 Move to OTP step
+        setFormStep('otp');
         setResendTimer(60);
         
         const interval = setInterval(() => {
@@ -536,7 +594,6 @@ const ScheduleForm = () => {
     }
   };
 
-  // 🌟 MODIFIED: This function verifies OTP, then submits the lead
   const handleVerifyAndSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -549,7 +606,6 @@ const ScheduleForm = () => {
     setError(null);
 
     try {
-      // 1. Verify OTP
       const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/otp/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -564,7 +620,6 @@ const ScheduleForm = () => {
         return;
       }
 
-      // 2. OTP is valid, now submit the lead
       setLoading(true);
       const leadResponse = await fetch(`${import.meta.env.VITE_API_URL}/leads`, {
         method: 'POST',
@@ -581,8 +636,8 @@ const ScheduleForm = () => {
 
       if (leadData.success) {
         setSuccess(true);
-        setFormStep('success'); // 👈 Move to success step
-        setFormData({ name: '', phone: '', email: '' }); // Clear form
+        setFormStep('success');
+        setFormData({ name: '', phone: '', email: '' });
         setConsent(false);
         setOtp('');
       } else {
@@ -596,7 +651,6 @@ const ScheduleForm = () => {
     }
   };
 
-
    return (
     <div className="lg:col-span-1">
       <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 sticky top-32">
@@ -607,7 +661,6 @@ const ScheduleForm = () => {
           <p className="text-blue-800 font-semibold text-lg">TODAY</p>
         </div>
         
-        {/* 🌟 NEW: Success Step */}
         {formStep === 'success' && (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -628,10 +681,8 @@ const ScheduleForm = () => {
           </div>
         )}
 
-        {/* 🌟 NEW: Details Step */}
         {formStep === 'details' && (
           <form onSubmit={handleSendOTP} className="space-y-4">
-            {/* Name Field */}
             <input
               type="text"
               name="name"
@@ -642,7 +693,6 @@ const ScheduleForm = () => {
               required
             />
 
-            {/* Phone Field */}
             <input
               type="tel"
               name="phone"
@@ -654,7 +704,6 @@ const ScheduleForm = () => {
               maxLength={10}
             />
 
-            {/* Email Field */}
             <input
               type="email"
               name="email"
@@ -665,7 +714,6 @@ const ScheduleForm = () => {
               required
             />
 
-            {/* Consent Checkbox */}
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <input
                 type="checkbox"
@@ -680,7 +728,6 @@ const ScheduleForm = () => {
               </label>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={sendingOtp}
@@ -691,7 +738,6 @@ const ScheduleForm = () => {
           </form>
         )}
 
-        {/* 🌟 NEW: OTP Step */}
         {formStep === 'otp' && (
            <form onSubmit={handleVerifyAndSubmit} className="space-y-4">
               <div className="p-2 bg-gray-100 rounded-lg">
@@ -707,7 +753,6 @@ const ScheduleForm = () => {
                 </p>
               </div>
 
-              {/* OTP Verification Field */}
               <input
                 type="text"
                 placeholder="Enter 6-digit OTP"
@@ -725,7 +770,7 @@ const ScheduleForm = () => {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => handleSendOTP()} // Re-use the send OTP logic
+                    onClick={() => handleSendOTP()}
                     className="text-blue-600 font-semibold hover:underline"
                     disabled={sendingOtp}
                   >
@@ -734,7 +779,6 @@ const ScheduleForm = () => {
                 )}
               </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={verifyingOtp || loading || otp.length !== 6}
@@ -745,7 +789,6 @@ const ScheduleForm = () => {
           </form>
         )}
 
-        {/* This part shows regardless of step, unless it's success */}
         {formStep !== 'success' && (
           <>
             <div className="mt-6 flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
@@ -771,14 +814,12 @@ const ScheduleForm = () => {
   );
 };
 
-
-// --- MAIN PAGE COMPONENT (Unchanged logic, just uses the components from above) ---
 export default function FilterResults() {
     const params = useParams();
     const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
     const filterSlug = params['*']?.split('/')[0] || 'all';
 
-    // 🌟 NEW: Dynamic filter options state
     const [filterOptions, setFilterOptions] = useState(defaultFilterOptions);
     const [loadingFilters, setLoadingFilters] = useState(true);
     
@@ -786,19 +827,93 @@ export default function FilterResults() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const initialFiltersWithSlug = useMemo(() => {
-        if (filterSlug === 'all' || !navbarFilterMap[filterSlug]) {
-            return initialFilters;
-        }
-        return {
-            ...initialFilters,
+    // 🌟 NEW: Autocomplete states
+    const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+    const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+    const searchInputRef = useRef<HTMLDivElement>(null);
+
+// Replace the initialFiltersWithSlug useMemo in your NEW filters.tsx with this:
+
+const initialFiltersWithSlug = useMemo(() => {
+    let filtersFromUrl = { ...initialFilters };
+
+    // Apply slug-based filters first
+    if (filterSlug !== 'all' && navbarFilterMap[filterSlug]) {
+        filtersFromUrl = {
+            ...filtersFromUrl,
             ...navbarFilterMap[filterSlug]
         };
-    }, [filterSlug]);
+    }
 
+    // Read URL parameters - BOTH 'q' and 'search' for backward compatibility
+    const querySearch = queryParams.get('search') || queryParams.get('q');
+    const queryBhk = queryParams.get('bhk');
+    const queryMinBudget = queryParams.get('minBudget');
+    const queryMaxBudget = queryParams.get('maxBudget');
+    const queryPropertyType = queryParams.get('propertyType');
+    const queryPossession = queryParams.get('possession'); // ⬅️ ADDED THIS
+
+    // Apply URL parameters
+    if (querySearch) {
+        filtersFromUrl.searchQuery = querySearch;
+    }
+    
+    if (queryBhk) {
+        // Handle both "2" and "2 BHK" formats
+        const bhkValue = queryBhk.includes('BHK') ? queryBhk : `${queryBhk} BHK`;
+        filtersFromUrl.bhk = [bhkValue];
+    }
+    
+    if (queryMinBudget || queryMaxBudget) {
+        filtersFromUrl.budget = {
+            min: queryMinBudget || '',
+            max: queryMaxBudget || ''
+        };
+    }
+    
+    if (queryPropertyType) {
+        filtersFromUrl.propertyType = queryPropertyType.split(',');
+    }
+    
+    // ⬅️ ADDED: Handle possession from URL
+    if (queryPossession) {
+        filtersFromUrl.possession = queryPossession.split(',');
+    }
+    
+    return filtersFromUrl;
+
+}, [filterSlug, location.search]);
+
+    
     const [filters, setFilters] = useState<typeof initialFilters>(initialFiltersWithSlug);
 
-    // 🌟 NEW: Fetch dynamic filter options
+useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (filters.searchQuery) params.set('search', filters.searchQuery);
+    if (filters.localities.length > 0) params.set('localities', filters.localities.join(','));
+    if (filters.bhk.length > 0) params.set('bhk', filters.bhk.join(','));
+    if (filters.budget.min) params.set('minBudget', filters.budget.min);
+    if (filters.budget.max) params.set('maxBudget', filters.budget.max);
+    if (filters.possession.length > 0) params.set('possession', filters.possession.join(','));
+    if (filters.propertyType.length > 0) params.set('propertyType', filters.propertyType.join(','));
+    if (filters.sortBy[0] && filters.sortBy[0] !== 'Relevance') params.set('sortBy', filters.sortBy[0]);
+    
+    const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+    window.history.replaceState({}, '', newUrl);
+}, [filters, location.pathname]);
+
+    // 🌟 NEW: Click outside handler for search suggestions
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
+                setShowSearchSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     useEffect(() => {
         const fetchFilterOptions = async () => {
             try {
@@ -813,7 +928,7 @@ export default function FilterResults() {
                         states: data.data.states || [],
                         bhk: data.data.bhk || [],
                         possession: data.data.possession || ['Ready to Move', 'Upto 1 Year', 'Upto 2 Years', '2+ Years'],
-                        propertyType: data.data.propertyType || [],
+                        propertyType: [], // ⬅️ Set to empty array, it will be populated later
                         sortBy: data.data.sortBy || ['Relevance', 'New Launch', 'Price: Low to High', 'Price: High to Low', 'Near Possession']
                     });
                 } else {
@@ -829,7 +944,6 @@ export default function FilterResults() {
         fetchFilterOptions();
     }, []);
 
-    // Fetch all projects from API
     useEffect(() => {
         const fetchProjects = async () => {
             try {
@@ -838,11 +952,31 @@ export default function FilterResults() {
                 const data = await response.json();
                 
                 if (data.success) {
-                    setAllProjects(data.data);
-                } else {
-                    setError(data.error || 'Failed to load projects');
-                }
-            } catch (err) {
+            setAllProjects(data.data);
+
+            // ⬇️ NEW: Dynamically generate Property Type options
+            const types = new Set<string>();
+                    data.data.forEach((project: any) => {
+                        // Add the type from overview if it exists
+                        const rawType = project.overview?.propertyType;
+                        if (rawType) {
+                            // ⬇️ MODIFIED: Standardize to "Title Case"
+                            // This turns "flat" and "Flat" into "Flat"
+                            const standardizedType = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
+                            types.add(standardizedType);
+                        }
+                    });
+
+            // ⬇️ NEW: Update the filterOptions state with the dynamic types
+            setFilterOptions(prevOptions => ({
+                ...prevOptions,
+                propertyType: Array.from(types).sort() // Creates sorted array e.g., ["Flat", "Penthouse", "Villa"]
+            }));
+
+        } else {
+            setError(data.error || 'Failed to load projects');
+        }
+    } catch (err) {
                 setError('Failed to load projects');
                 console.error(err);
             } finally {
@@ -853,9 +987,13 @@ export default function FilterResults() {
         fetchProjects();
     }, []);
 
-    useEffect(() => {
+useEffect(() => {
+    // Only reset filters if there are no URL parameters
+    const hasUrlParams = location.search.length > 0;
+    if (!hasUrlParams) {
         setFilters(initialFiltersWithSlug);
-    }, [filterSlug, initialFiltersWithSlug]);
+    }
+}, [filterSlug]);
 
     const handleFilterChange = (category: keyof typeof initialFilters, value: any) => {
         setFilters(prev => ({
@@ -864,9 +1002,51 @@ export default function FilterResults() {
         }));
     };
 
-    const clearAllFilters = () => {
-        setFilters(initialFilters);
+    // 🌟 NEW: Autocomplete search handler
+    const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        handleFilterChange('searchQuery', value);
+
+        if (value.length > 1) {
+            const lowerCaseValue = value.toLowerCase();
+            const suggestionSet = new Set<string>();
+
+            allProjects.forEach(project => {
+                // Match project names
+                if (project.name.toLowerCase().includes(lowerCaseValue)) {
+                    suggestionSet.add(project.name);
+                }
+                // Match developers/builders
+                if (project.developer.toLowerCase().includes(lowerCaseValue)) {
+                    suggestionSet.add(project.developer);
+                }
+                // Match localities (area)
+                if (project.area && project.area.toLowerCase().includes(lowerCaseValue)) {
+                    suggestionSet.add(project.area);
+                }
+            });
+
+            const newSuggestions = Array.from(suggestionSet).slice(0, 7);
+            setSearchSuggestions(newSuggestions);
+            setShowSearchSuggestions(newSuggestions.length > 0);
+        } else {
+            setSearchSuggestions([]);
+            setShowSearchSuggestions(false);
+        }
     };
+
+    // 🌟 NEW: Handle suggestion click
+    const handleSearchSuggestionClick = (suggestion: string) => {
+        handleFilterChange('searchQuery', suggestion);
+        setSearchSuggestions([]);
+        setShowSearchSuggestions(false);
+    };
+
+    const clearAllFilters = () => {
+    setFilters(initialFilters);
+    // Clear URL parameters as well
+    window.history.replaceState({}, '', location.pathname);
+};
 
     const filteredAndSortedProjects = useMemo(() => {
         let filteredProjects = [...allProjects];
@@ -876,7 +1056,8 @@ export default function FilterResults() {
             filteredProjects = filteredProjects.filter(project =>
                 project.name.toLowerCase().includes(lowerCaseQuery) ||
                 project.developer.toLowerCase().includes(lowerCaseQuery) ||
-                project.description.toLowerCase().includes(lowerCaseQuery)
+                project.description.toLowerCase().includes(lowerCaseQuery) ||
+                (project.area && project.area.toLowerCase().includes(lowerCaseQuery))
             );
         }
 
@@ -962,7 +1143,6 @@ export default function FilterResults() {
             : `Properties in Ahmedabad`;
     }, [filters, filterSlug]);
 
-    // Loading state
     if (loading || loadingFilters) {
         return (
             <>
@@ -986,7 +1166,6 @@ export default function FilterResults() {
         );
     }
 
-    // Error state
     if (error) {
         return (
             <>
@@ -1017,7 +1196,8 @@ export default function FilterResults() {
                             {pageTitle} ({filteredAndSortedProjects.length} Property)
                         </h1>
                         <div className="bg-white py-4 px-6 mb-8 shadow-sm rounded-lg border border-gray-200 flex flex-wrap gap-3 justify-start items-center">
-                            <div className="relative flex-grow min-w-[200px]">
+                            {/* 🌟 MODIFIED: Search input with autocomplete */}
+                            <div className="relative flex-grow min-w-[200px]" ref={searchInputRef}>
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                     <SearchIcon size={20} className="text-gray-400" />
                                 </div>
@@ -1025,9 +1205,25 @@ export default function FilterResults() {
                                     type="text"
                                     placeholder="Search by name, builder, or location..."
                                     value={filters.searchQuery}
-                                    onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                                    onChange={handleSearchInputChange}
+                                    onFocus={() => setShowSearchSuggestions(searchSuggestions.length > 0)}
                                     className="w-full px-4 pl-10 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-800"
+                                    autoComplete="off"
                                 />
+                                {/* 🌟 NEW: Autocomplete dropdown */}
+                                {showSearchSuggestions && (
+                                    <div className="absolute top-full left-0 right-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
+                                        {searchSuggestions.map((suggestion, index) => (
+                                            <div
+                                                key={index}
+                                                onClick={() => handleSearchSuggestionClick(suggestion)}
+                                                className="cursor-pointer px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                            >
+                                                {suggestion}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <TagFilterDropdown label="Popular Localities" options={filterOptions.localities} selected={filters.localities} onChange={(v) => handleFilterChange('localities', v)} />
                             <TagFilterDropdown label="BHK" options={filterOptions.bhk} selected={filters.bhk} onChange={(v) => handleFilterChange('bhk', v)} />
