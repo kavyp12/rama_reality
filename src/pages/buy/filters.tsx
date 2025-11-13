@@ -6,7 +6,8 @@ import Navbar from '../../components/Navbar';
 import { 
     HeartIcon, ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, 
     PhoneIcon, MessageCircleIcon, XIcon, SearchIcon, CheckCircleIcon, 
-    BedIcon, BathIcon, HomeIcon, MailIcon 
+    BedIcon, BathIcon, HomeIcon, MailIcon,
+    SlidersHorizontal, ArrowLeft, Plus
 } from 'lucide-react';
 import { Heart as HeartIconFilled } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
@@ -25,6 +26,7 @@ const defaultFilterOptions = {
 };
 
 const initialFilters = {
+    city: '',
     localities: [],
     bhk: [],
     budget: { min: '', max: '' },
@@ -179,14 +181,11 @@ const matchesBHK = (project: any, bhkFilters: string[]): boolean => {
 const matchesPropertyType = (project: any, typeFilters: string[]): boolean => {
     if (typeFilters.length === 0) return true;
     
-    // ⬇️ MODIFIED: Check the project's overview.propertyType field directly
     const rawType = project.overview?.propertyType;
-    if (!rawType) return false; // If project has no type, it doesn't match
+    if (!rawType) return false; 
     
-    // ⬇️ MODIFIED: Standardize the project's type before checking
     const standardizedType = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
     
-    // Now it compares "Flat" (from filter) with "Flat" (from project)
     return typeFilters.includes(standardizedType);
 };
 
@@ -270,12 +269,12 @@ const TagFilterDropdown = ({
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`px-4 py-3 rounded-lg flex items-center gap-1 border transition-colors text-sm ${
+                className={`px-3 py-2 text-sm rounded-lg flex items-center gap-1 border transition-colors ${
                     isActive ? 'bg-blue-100 border-blue-800 text-blue-800' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
                 }`}
             >
                 <span>{getDisplayLabel()}</span>
-                <ChevronDownIcon size={16} />
+                <ChevronDownIcon size={14} />
             </button>
             {isOpen && (
                 <div className={`
@@ -360,18 +359,19 @@ const BudgetDropdown = ({
         return label;
     };
 
-    const isActive = selected.min || selected.max;
+    const // Replace the desktop filter section with this more compact version:
+isActive = selected.min || selected.max;
 
     return (
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`px-4 py-3 rounded-lg flex items-center gap-1 border transition-colors text-sm ${
+                className={`px-3 py-2 text-sm rounded-lg flex items-center gap-1 border transition-colors ${
                     isActive ? 'bg-blue-100 border-blue-800 text-blue-800' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
                 }`}
             >
                 <span>{getDisplayLabel()}</span>
-                <ChevronDownIcon size={16} />
+                <ChevronDownIcon size={14} />
             </button>
             {isOpen && (
                 <div className="absolute top-full mt-2 w-72 bg-white rounded-lg shadow-2xl border border-gray-200 z-20">
@@ -408,7 +408,250 @@ const BudgetDropdown = ({
         </div>
     );
 };
-// src/pages/filters.tsx
+
+const FilterButton = ({ children, onClick, isActive }: { children: React.ReactNode; onClick: () => void; isActive?: boolean }) => (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-all ${
+        isActive
+          ? 'border-blue-500 bg-blue-50 text-blue-600'
+          : 'border-gray-300 text-gray-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
+      }`}
+    >
+      {isActive ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+      <span>{children}</span>
+    </button>
+);
+
+
+const MobileFiltersModal = ({
+  isOpen,
+  onClose,
+  filters,
+  setFilters,
+  filterOptions
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  filters: typeof initialFilters;
+  setFilters: (filters: typeof initialFilters) => void;
+  filterOptions: typeof defaultFilterOptions;
+}) => {
+  if (!isOpen) return null;
+
+  const [tempFilters, setTempFilters] = useState(filters);
+
+  const handleCityClick = (city: string) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      city: prev.city === city ? '' : city, // Toggle city
+    }));
+  };
+  
+  const handlePropertyTypeClick = (type: string) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      propertyType: prev.propertyType.includes(type)
+        ? prev.propertyType.filter((t) => t !== type)
+        : [...prev.propertyType, type],
+    }));
+  };
+  
+  const handleBHKClick = (type: string) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      bhk: prev.bhk.includes(type)
+        ? prev.bhk.filter((t) => t !== type)
+        : [...prev.bhk, type],
+    }));
+  };
+
+  const handlePossessionClick = (type: string) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      possession: prev.possession.includes(type)
+        ? prev.possession.filter((t) => t !== type)
+        : [...prev.possession, type],
+    }));
+  };
+  
+  const handleApply = () => {
+    setFilters(tempFilters);
+    onClose();
+  };
+
+  const handleClearAll = () => {
+    setTempFilters(initialFilters);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center lg:p-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose}></div>
+      
+<div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-[#F0F7FF] shadow-xl ml-auto">
+        <div className="flex items-center justify-between border-b p-4 sticky top-0 bg-white z-10">
+          <button onClick={onClose} className="p-1 text-gray-600 hover:text-gray-900">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+          <button onClick={onClose} className="p-1 text-gray-600 hover:text-gray-900">
+            <XIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-6 overflow-y-auto p-4">
+
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-gray-800">Search City</label>
+            <div className="flex flex-wrap gap-2">
+              {filterOptions.cities.map((city) => (
+                <button
+                  key={city}
+                  onClick={() => handleCityClick(city)}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium ${
+                    tempFilters.city === city
+                      ? 'border-blue-500 bg-blue-50 text-blue-600'
+                      : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                  }`}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-gray-800">Property Type</label>
+              <button 
+                onClick={() => setTempFilters(prev => ({...prev, propertyType: []}))}
+                className="text-sm font-medium text-gray-500 hover:text-blue-500"
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {filterOptions.propertyType.map((type) => (
+                <FilterButton
+                  key={type}
+                  onClick={() => handlePropertyTypeClick(type)}
+                  isActive={tempFilters.propertyType.includes(type)}
+                >
+                  {type}
+                </FilterButton>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-gray-800">BHK</label>
+              <button
+                onClick={() => setTempFilters(prev => ({...prev, bhk: []}))}
+                className="text-sm font-medium text-gray-500 hover:text-blue-500"
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {filterOptions.bhk.map((bhk) => (
+                <FilterButton
+                  key={bhk}
+                  onClick={() => handleBHKClick(bhk)}
+                  isActive={tempFilters.bhk.includes(bhk)}
+                >
+                  {bhk}
+                </FilterButton>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-gray-800">Budget</label>
+              <button
+                onClick={() => setTempFilters(prev => ({...prev, budget: {min: '', max: ''}}))}
+                className="text-sm font-medium text-gray-500 hover:text-blue-500"
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="relative flex-1">
+                <select 
+                  value={tempFilters.budget.min}
+                  onChange={(e) => setTempFilters(prev => ({...prev, budget: {...prev.budget, min: e.target.value}}))}
+                  className="h-full w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                >
+                  <option value="">Min</option>
+                  <option value="50">₹50L</option>
+                  <option value="75">₹75L</option>
+                  <option value="100">₹1Cr</option>
+                  <option value="150">₹1.5Cr</option>
+                </select>
+                <ChevronDownIcon size={16} className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+              <span className="text-gray-500">–</span>
+              <div className="relative flex-1">
+                <select 
+                  value={tempFilters.budget.max}
+                  onChange={(e) => setTempFilters(prev => ({...prev, budget: {...prev.budget, max: e.target.value}}))}
+                  className="h-full w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                >
+                  <option value="">Max</option>
+                  <option value="75">₹75L</option>
+                  <option value="100">₹1Cr</option>
+                  <option value="150">₹1.5Cr</option>
+                  <option value="200">₹2Cr</option>
+                  <option value="300">₹3Cr+</option>
+                </select>
+                <ChevronDownIcon size={16} className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-gray-800">Possession</label>
+              <button 
+                onClick={() => setTempFilters(prev => ({...prev, possession: []}))}
+                className="text-sm font-medium text-gray-500 hover:text-blue-500"
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {filterOptions.possession.map((possession) => (
+                <FilterButton
+                  key={possession}
+                  onClick={() => handlePossessionClick(possession)}
+                  isActive={tempFilters.possession.includes(possession)}
+                >
+                  {possession}
+                </FilterButton>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 border-t p-4 sticky bottom-0 bg-white z-10">
+          <button
+            onClick={handleClearAll}
+            className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-bold text-gray-800 shadow-sm hover:bg-gray-50"
+          >
+            Clear All
+          </button>
+          <button
+            onClick={handleApply}
+            className="flex-1 rounded-lg border border-gray-900 bg-gray-900 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-gray-800"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const FlatCard = ({ flat }: { flat: any }) => {
     const firstConfig = flat.configurations?.[0] || {};
@@ -416,7 +659,6 @@ export const FlatCard = ({ flat }: { flat: any }) => {
     const bedCount = bhkMatch ? bhkMatch[1] : (flat.bhk ? flat.bhk.split(' ')[0] : 'N/A');
     
     const propertyType = flat.overview?.propertyType || 'Property';
-    // ...
     const imageCount = flat.heroImages?.length || 1;
 
     const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
@@ -827,12 +1069,11 @@ export default function FilterResults() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // 🌟 NEW: Autocomplete states
     const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
     const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
     const searchInputRef = useRef<HTMLDivElement>(null);
 
-// Replace the initialFiltersWithSlug useMemo in your NEW filters.tsx with this:
+    const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
 const initialFiltersWithSlug = useMemo(() => {
     let filtersFromUrl = { ...initialFilters };
@@ -845,17 +1086,22 @@ const initialFiltersWithSlug = useMemo(() => {
         };
     }
 
-    // Read URL parameters - BOTH 'q' and 'search' for backward compatibility
+    // Read URL parameters
     const querySearch = queryParams.get('search') || queryParams.get('q');
+    const queryCity = queryParams.get('city');
     const queryBhk = queryParams.get('bhk');
     const queryMinBudget = queryParams.get('minBudget');
     const queryMaxBudget = queryParams.get('maxBudget');
     const queryPropertyType = queryParams.get('propertyType');
-    const queryPossession = queryParams.get('possession'); // ⬅️ ADDED THIS
+    const queryPossession = queryParams.get('possession');
 
     // Apply URL parameters
     if (querySearch) {
         filtersFromUrl.searchQuery = querySearch;
+    }
+    
+    if (queryCity) {
+        filtersFromUrl.city = queryCity;
     }
     
     if (queryBhk) {
@@ -875,7 +1121,6 @@ const initialFiltersWithSlug = useMemo(() => {
         filtersFromUrl.propertyType = queryPropertyType.split(',');
     }
     
-    // ⬅️ ADDED: Handle possession from URL
     if (queryPossession) {
         filtersFromUrl.possession = queryPossession.split(',');
     }
@@ -890,6 +1135,7 @@ const initialFiltersWithSlug = useMemo(() => {
 useEffect(() => {
     const params = new URLSearchParams();
     
+    if (filters.city) params.set('city', filters.city);
     if (filters.searchQuery) params.set('search', filters.searchQuery);
     if (filters.localities.length > 0) params.set('localities', filters.localities.join(','));
     if (filters.bhk.length > 0) params.set('bhk', filters.bhk.join(','));
@@ -903,7 +1149,6 @@ useEffect(() => {
     window.history.replaceState({}, '', newUrl);
 }, [filters, location.pathname]);
 
-    // 🌟 NEW: Click outside handler for search suggestions
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
@@ -924,11 +1169,11 @@ useEffect(() => {
                 if (data.success) {
                     setFilterOptions({
                         localities: data.data.localities || [],
-                        cities: data.data.cities || [],
+                        cities: [], // Will be populated by fetchProjects
                         states: data.data.states || [],
                         bhk: data.data.bhk || [],
                         possession: data.data.possession || ['Ready to Move', 'Upto 1 Year', 'Upto 2 Years', '2+ Years'],
-                        propertyType: [], // ⬅️ Set to empty array, it will be populated later
+                        propertyType: [], // Will be populated by fetchProjects
                         sortBy: data.data.sortBy || ['Relevance', 'New Launch', 'Price: Low to High', 'Price: High to Low', 'Near Possession']
                     });
                 } else {
@@ -952,31 +1197,29 @@ useEffect(() => {
                 const data = await response.json();
                 
                 if (data.success) {
-            setAllProjects(data.data);
+                    setAllProjects(data.data);
 
-            // ⬇️ NEW: Dynamically generate Property Type options
-            const types = new Set<string>();
+                    const types = new Set<string>();
+                    const cities = new Set<string>();
                     data.data.forEach((project: any) => {
-                        // Add the type from overview if it exists
                         const rawType = project.overview?.propertyType;
                         if (rawType) {
-                            // ⬇️ MODIFIED: Standardize to "Title Case"
-                            // This turns "flat" and "Flat" into "Flat"
                             const standardizedType = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
                             types.add(standardizedType);
                         }
+                        if (project.city) cities.add(project.city);
                     });
 
-            // ⬇️ NEW: Update the filterOptions state with the dynamic types
-            setFilterOptions(prevOptions => ({
-                ...prevOptions,
-                propertyType: Array.from(types).sort() // Creates sorted array e.g., ["Flat", "Penthouse", "Villa"]
-            }));
+                    setFilterOptions(prevOptions => ({
+                        ...prevOptions,
+                        propertyType: Array.from(types).sort(),
+                        cities: Array.from(cities).sort()
+                    }));
 
-        } else {
-            setError(data.error || 'Failed to load projects');
-        }
-    } catch (err) {
+                } else {
+                    setError(data.error || 'Failed to load projects');
+                }
+            } catch (err) {
                 setError('Failed to load projects');
                 console.error(err);
             } finally {
@@ -1002,7 +1245,6 @@ useEffect(() => {
         }));
     };
 
-    // 🌟 NEW: Autocomplete search handler
     const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         handleFilterChange('searchQuery', value);
@@ -1012,15 +1254,12 @@ useEffect(() => {
             const suggestionSet = new Set<string>();
 
             allProjects.forEach(project => {
-                // Match project names
                 if (project.name.toLowerCase().includes(lowerCaseValue)) {
                     suggestionSet.add(project.name);
                 }
-                // Match developers/builders
                 if (project.developer.toLowerCase().includes(lowerCaseValue)) {
                     suggestionSet.add(project.developer);
                 }
-                // Match localities (area)
                 if (project.area && project.area.toLowerCase().includes(lowerCaseValue)) {
                     suggestionSet.add(project.area);
                 }
@@ -1035,7 +1274,6 @@ useEffect(() => {
         }
     };
 
-    // 🌟 NEW: Handle suggestion click
     const handleSearchSuggestionClick = (suggestion: string) => {
         handleFilterChange('searchQuery', suggestion);
         setSearchSuggestions([]);
@@ -1062,7 +1300,11 @@ useEffect(() => {
         }
 
         filteredProjects = filteredProjects.filter(project => {
-            const { localities, bhk, budget, possession, propertyType } = filters;
+            const { city, localities, bhk, budget, possession, propertyType } = filters;
+
+            if (city) {
+                if (project.city !== city) return false;
+            }
 
             if (localities.length > 0) {
                 const matchesLocality = localities.some(loc =>
@@ -1121,6 +1363,7 @@ useEffect(() => {
 
     const pageTitle = useMemo(() => {
         const hasActiveFilters =
+            filters.city ||
             filters.searchQuery ||
             filters.localities.length > 0 ||
             filters.bhk.length > 0 ||
@@ -1129,6 +1372,7 @@ useEffect(() => {
             filters.propertyType.length > 0 ||
             filters.sortBy[0] !== 'Relevance';
         const activeFilters: string[] = [];
+        if (filters.city) activeFilters.push(`in ${filters.city}`);
         if (filters.searchQuery) activeFilters.push(`"${filters.searchQuery}"`);
         if (filters.localities.length > 0) activeFilters.push(`in ${filters.localities.join(', ')}`);
         if (filters.bhk.length > 0) activeFilters.push(`${filters.bhk.join(', ')}`);
@@ -1139,7 +1383,7 @@ useEffect(() => {
         if (filters.possession.length > 0) activeFilters.push(filters.possession.join(', '));
         if (filters.propertyType.length > 0) activeFilters.push(filters.propertyType.join(', '));
         return hasActiveFilters
-            ? `Properties matching ${activeFilters.join(', ')}`
+            ? `Properties matching ${activeFilters.join(' ')}`
             : `Properties in Ahmedabad`;
     }, [filters, filterSlug]);
 
@@ -1148,7 +1392,7 @@ useEffect(() => {
             <>
                 <div className="min-h-screen bg-gray-50 text-gray-900">
                     <Navbar />
-                    <main className="pt-28 pb-8">
+                    <main className="pt-20 pb-8">
                         <div className="container mx-auto px-4 lg:px-8">
                             <div className="animate-pulse space-y-4">
                                 <div className="h-8 bg-gray-300 rounded w-1/2"></div>
@@ -1171,7 +1415,7 @@ useEffect(() => {
             <>
                 <div className="min-h-screen bg-gray-50 text-gray-900">
                     <Navbar />
-                    <main className="pt-28 pb-8">
+                    <main className="pt-20 pb-8">
                         <div className="container mx-auto px-4 lg:px-8 text-center">
                             <h1 className="text-3xl font-bold text-red-600">Error Loading Projects</h1>
                             <p className="text-gray-600 mt-2">{error}</p>
@@ -1190,16 +1434,81 @@ useEffect(() => {
             `}</style>
             <div className="min-h-screen bg-gray-50 text-gray-900">
                 <Navbar />
-                <main className="pt-28 pb-8">
+                <main className="pt-20 pb-8">
                     <div className="container mx-auto px-4 lg:px-8">
-                        <h1 className="text-3xl font-bold text-gray-800 mb-6">
+                        
+<div className="block lg:hidden w-full bg-[#F0F7FF] shadow-sm z-30 p-3 space-y-3 mb-6 rounded-lg border border-[#E1ECF7]">
+                            <div className="flex items-center gap-2">
+
+                                <select
+                                    value={filters.city}
+                                    onChange={(e) => handleFilterChange('city', e.target.value)}
+                                    className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-800 flex-shrink-0"
+                                >
+                                    <option value="">City</option>
+                                    {filterOptions.cities.map(city => (
+                                        <option key={city} value={city}>{city}</option>
+                                    ))}
+                                </select>
+
+                                <div className="relative flex-grow" ref={searchInputRef}>
+                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                        <SearchIcon size={18} className="text-gray-400" />
+                                    </div>
+                                    <input
+                                      type="text"
+                                      placeholder="Search..."
+                                      value={filters.searchQuery}
+                                      onChange={handleSearchInputChange}
+                                      onFocus={() => setShowSearchSuggestions(searchSuggestions.length > 0)}
+                                      className="flex-1 w-full px-3 pl-9 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-800"
+                                      autoComplete="off"
+                                    />
+                                    {showSearchSuggestions && (
+                                        <div className="absolute top-full left-0 right-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
+                                            {searchSuggestions.map((suggestion, index) => (
+                                                <div
+                                                    key={index}
+                                                    onClick={() => handleSearchSuggestionClick(suggestion)}
+                                                    className="cursor-pointer px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                                >
+                                                    {suggestion}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                <button
+                                  onClick={() => setIsMobileModalOpen(true)}
+                                  className="p-2.5 border border-gray-300 rounded-lg flex-shrink-0"
+                                >
+                                  <SlidersHorizontal size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+
+                        <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-6">
                             {pageTitle} ({filteredAndSortedProjects.length} Property)
                         </h1>
-                        <div className="bg-white py-4 px-6 mb-8 shadow-sm rounded-lg border border-gray-200 flex flex-wrap gap-3 justify-start items-center">
-                            {/* 🌟 MODIFIED: Search input with autocomplete */}
-                            <div className="relative flex-grow min-w-[200px]" ref={searchInputRef}>
+
+<div className="hidden lg:flex bg-[#F0F7FF] py-2.5 px-4 mb-8 shadow-sm rounded-lg border border-[#E1ECF7] flex-wrap gap-2 justify-start items-center">
+                                                        
+                            <select
+                                value={filters.city}
+                                onChange={(e) => handleFilterChange('city', e.target.value)}
+                                className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-800"
+                            >
+                                <option value="">All Cities</option>
+                                {filterOptions.cities.map(city => (
+                                    <option key={city} value={city}>{city}</option>
+                                ))}
+                            </select>
+
+                            <div className="relative flex-grow min-w-[180px] max-w-[280px]" ref={searchInputRef}>
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                    <SearchIcon size={20} className="text-gray-400" />
+                                    <SearchIcon size={16} className="text-gray-400" />
                                 </div>
                                 <input
                                     type="text"
@@ -1207,10 +1516,9 @@ useEffect(() => {
                                     value={filters.searchQuery}
                                     onChange={handleSearchInputChange}
                                     onFocus={() => setShowSearchSuggestions(searchSuggestions.length > 0)}
-                                    className="w-full px-4 pl-10 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-800"
+                                    className="w-full px-3 pl-9 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-800"
                                     autoComplete="off"
                                 />
-                                {/* 🌟 NEW: Autocomplete dropdown */}
                                 {showSearchSuggestions && (
                                     <div className="absolute top-full left-0 right-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
                                         {searchSuggestions.map((suggestion, index) => (
@@ -1231,8 +1539,8 @@ useEffect(() => {
                             <TagFilterDropdown label="Possession" options={filterOptions.possession} selected={filters.possession} onChange={(v) => handleFilterChange('possession', v)} />
                             <TagFilterDropdown label="Property Type" options={filterOptions.propertyType} selected={filters.propertyType} onChange={(v) => handleFilterChange('propertyType', v)} />
                             <TagFilterDropdown label="Sort By" options={filterOptions.sortBy} selected={filters.sortBy} onChange={(v) => handleFilterChange('sortBy', v)} />
-                            <button onClick={clearAllFilters} className="text-sm font-semibold text-gray-600 hover:text-blue-800 flex items-center gap-1 ml-auto">
-                                <XIcon size={14} />
+                            <button onClick={clearAllFilters} className="text-xs font-semibold text-gray-600 hover:text-blue-800 flex items-center gap-1 ml-auto">
+                                <XIcon size={12} />
                                 Clear All
                             </button>
                         </div>
@@ -1256,6 +1564,14 @@ useEffect(() => {
                     </div>
                 </main>
             </div>
+            
+            <MobileFiltersModal 
+                isOpen={isMobileModalOpen}
+                onClose={() => setIsMobileModalOpen(false)}
+                filters={filters}
+                setFilters={setFilters}
+                filterOptions={filterOptions}
+            />
         </>
     );
 }
