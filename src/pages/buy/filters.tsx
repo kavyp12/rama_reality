@@ -1456,15 +1456,15 @@ useEffect(() => {
                                         <SearchIcon size={18} className="text-gray-400" />
                                     </div>
                                     <input
-                                      type="text"
-                                      placeholder="Search..."
-                                      value={filters.searchQuery}
-                                      onChange={handleSearchInputChange}
-                                      onFocus={() => setShowSearchSuggestions(searchSuggestions.length > 0)}
-                                      className="flex-1 w-full px-3 pl-9 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-800"
-                                      autoComplete="off"
-                                    />
-                                    {showSearchSuggestions && (
+                                          type="text"
+                                          placeholder="Search..."
+                                          value={filters.searchQuery}
+                                          onChange={handleSearchInputChange}
+                                          onFocus={() => setShowSearchSuggestions(searchSuggestions.length > 0)}
+                                          className="flex-1 w-full px-3 pl-9 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-1 focus:ring-blue-800"
+                                          autoComplete="off"
+                                        />
+                                        {showSearchSuggestions && (
                                         <div className="absolute top-full left-0 right-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
                                             {searchSuggestions.map((suggestion, index) => (
                                                 <div
