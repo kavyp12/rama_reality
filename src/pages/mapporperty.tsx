@@ -550,7 +550,6 @@ const FullFiltersModal = ({
     </div>
   );
 };
-
 // PropertyCardSmall Component - Compact Mobile Version
 const PropertyCardSmall = ({
   property,
@@ -564,11 +563,12 @@ const PropertyCardSmall = ({
   return (
     <div
       onClick={onClick}
-      className={`flex-shrink-0 w-44 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border cursor-pointer overflow-hidden ${
+      className={`flex-shrink-0 w-72 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border cursor-pointer overflow-hidden flex flex-row ${
         isHighlighted ? 'border-blue-800 ring-2 ring-blue-100' : 'border-gray-100'
       }`}
     >
-      <div className="relative w-full h-24">
+      {/* Left Image Block (Square) */}
+      <div className="relative w-24 h-24 flex-shrink-0">
         <img
           src={property.image}
           alt={property.title}
@@ -579,20 +579,31 @@ const PropertyCardSmall = ({
           Verified
         </div>
       </div>
-      <div className="p-2 flex flex-col">
-        <h2 className="text-sm font-bold text-gray-900">{property.price}</h2>
-        <p className="text-xs font-semibold text-gray-800 truncate">
+      
+      {/* Right Content Block (Maximum Compactness) */}
+      <div className="flex-1 p-2 flex flex-col justify-start overflow-hidden"> {/* 👈 CHANGED: Reduced p-2.5 to p-2, used justify-start to remove bottom gap */}
+        
+        {/* Price - Reduced Size */}
+        <h2 className="text-sm font-bold text-gray-900 leading-tight truncate">{property.price}</h2> {/* 👈 CHANGED: text-base to text-sm, added leading-tight */}
+        
+        {/* Title / Location - Reduced Size */}
+        <p className="text-xs font-semibold text-gray-800 leading-tight truncate"> {/* 👈 CHANGED: text-sm to text-xs, added leading-tight */}
           {property.title}
         </p>
-        <p className="text-[10px] text-gray-500 truncate mb-1">{property.location}</p>
-        <div className="flex items-center gap-2 text-[10px] text-gray-600 pt-1 border-t border-gray-100">
+        <p className="text-xs text-gray-500 leading-tight truncate">{property.location}</p>
+        
+        {/* Property Type - Reduced Margin */}
+        <p className="text-xs text-gray-500 leading-tight truncate mb-0.5">{property.propertyType}</p> {/* 👈 CHANGED: mb-1.5 to mb-0.5 */}
+
+        {/* Icons - Tighter positioning */}
+        <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-0.5"> {/* 👈 CHANGED: Added mt-0.5 to keep it close to text */}
           <div className="flex items-center gap-0.5">
             <BedIcon size={12} className="text-gray-500" />
-            <span>{property.bedrooms}</span>
+            <span className="truncate">{property.bedrooms}</span>
           </div>
           <div className="flex items-center gap-0.5">
             <BathIcon size={12} className="text-gray-500" />
-            <span>2</span>
+            <span className="truncate">2</span>
           </div>
           <div className="flex items-center gap-0.5">
             <HomeIcon size={12} className="text-gray-500" />
@@ -1460,7 +1471,7 @@ const handlePropertyCardClick = (property: Property) => {
       {/* Mobile Bottom Sheet */}
       <div
         className={`block lg:hidden fixed bottom-0 left-0 right-0 w-full bg-gray-50 rounded-t-2xl shadow-2xl z-20 transition-all duration-300 ease-in-out ${
-          isSheetOpen ? "h-[240px]" : "h-14"
+isSheetOpen ? "max-h-[180px]" : "h-14"
         }`}
       >
         <div
@@ -1485,7 +1496,7 @@ const handlePropertyCardClick = (property: Property) => {
               <p className="text-xs mt-1">Move or zoom the map</p>
             </div>
           ) : (
-            <div className="flex p-3 space-x-2 h-full">
+<div className="flex p-3 space-x-2">
               {visibleProperties.map((property) => (
                 <PropertyCardSmall
                   key={property.id}
