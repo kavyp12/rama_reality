@@ -8,6 +8,7 @@ const AdminProjectList = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ const AdminProjectList = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <Navbar />
+                   <Navbar isVisible={isNavbarVisible} />
         <main className="pt-24 pb-12">
           <div className="container mx-auto px-4 max-w-7xl">
             <div className="flex items-center justify-center h-64">
@@ -98,7 +99,7 @@ const AdminProjectList = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <Navbar />
+                   <Navbar isVisible={isNavbarVisible} />
         <main className="pt-24 pb-12">
           <div className="container mx-auto px-4 max-w-7xl">
             <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg">
@@ -115,7 +116,7 @@ const AdminProjectList = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Navbar />
+                   <Navbar isVisible={isNavbarVisible} />
       <main className="pt-24 pb-12">
         <div className="container mx-auto px-4 max-w-7xl">
           {/* Header Section */}

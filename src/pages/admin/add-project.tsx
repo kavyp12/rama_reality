@@ -52,6 +52,7 @@ const AddProject = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allProjects, setAllProjects] = useState<any[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const navigate = useNavigate();
 
   // 🌟 Fetch all projects for the Similar Properties dropdown
@@ -105,7 +106,7 @@ const AddProject = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+<Navbar isVisible={isNavbarVisible} />
       {isLoadingProjects ? (
         <main className="pt-24 pb-12">
           <div className="container mx-auto px-4 max-w-5xl">

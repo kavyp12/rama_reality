@@ -114,6 +114,9 @@ const ProjectDetails = () => {
   // 🌟 ADD STATE TO TRACK THE PENDING ACTION
   const [pendingAction, setPendingAction] = useState<'viewFloorPlan' | 'downloadBrochure' | null>(null);
 
+  // 🌟 ADD NAVBAR VISIBILITY STATE
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+
   // ... (useEffect for fetchProject, check isUserVerified, floorPlanGroups, map, and image handlers remain the same) ...
   useEffect(() => {
     const fetchProject = async () => {
@@ -443,7 +446,7 @@ const handleSendOTPContact = async (e?: React.FormEvent) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+ <Navbar isVisible={isNavbarVisible} />
         <main className="pt-32 pb-8 container mx-auto px-4 text-center">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-300 rounded w-1/2 mx-auto mb-4"></div>
@@ -457,7 +460,7 @@ const handleSendOTPContact = async (e?: React.FormEvent) => {
   if (error || !project) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        <Navbar isVisible={isNavbarVisible} />
         <main className="pt-32 pb-8 container mx-auto px-4 text-center">
           <h1 className="text-3xl font-bold text-gray-800">Project Not Found</h1>
           <p className="text-gray-600 mt-2">{error || 'The project you are looking for does not exist.'}</p>
@@ -540,7 +543,7 @@ const handleSendOTPContact = async (e?: React.FormEvent) => {
                 `}</style>
 
       <div className="min-h-screen bg-white text-gray-900">
-        <Navbar />
+                   <Navbar isVisible={isNavbarVisible} />
         <main className="pt-24 pb-12">
           <div className="container mx-auto px-4 lg:px-8">
             

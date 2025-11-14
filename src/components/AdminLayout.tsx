@@ -6,6 +6,7 @@ import { LayoutDashboard, List, Users, PlusCircle, Filter } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
+  const [isNavbarVisible, setIsNavbarVisible] = React.useState(true);
 
   const navItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -17,7 +18,7 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+   <Navbar isVisible={isNavbarVisible} />
       <main className="pt-20"> {/* Start content below navbar */}
         <div className="flex">
           {/* Admin Sidebar */}

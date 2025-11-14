@@ -9,6 +9,7 @@ export default function WishlistPage() {
     const [allProjects, setAllProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isNavbarVisible, setIsNavbarVisible] = useState(true);
 
     // We fetch all projects, just like the filter page does
     useEffect(() => {
@@ -44,7 +45,7 @@ export default function WishlistPage() {
                 div, h1, h2, h3, p, button, span, a, input, label { font-family: 'Poppins', sans-serif; }
             `}</style>
             <div className="min-h-screen bg-gray-50 text-gray-900">
-                <Navbar />
+                   <Navbar isVisible={isNavbarVisible} />
                 <main className="pt-28 pb-8">
                     <div className="container mx-auto px-4 lg:px-8">
                         <h1 className="text-3xl font-bold text-gray-800 mb-6">

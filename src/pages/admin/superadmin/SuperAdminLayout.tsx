@@ -6,6 +6,7 @@ import { Shield, LayoutDashboard } from 'lucide-react';
 
 const SuperAdminLayout: React.FC = () => {
   const location = useLocation();
+  const isNavbarVisible = true; // or manage this with state if needed
 
   const navItems = [
     { name: 'Dashboard', href: '/superadmin', icon: LayoutDashboard },
@@ -14,7 +15,7 @@ const SuperAdminLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+     <Navbar isVisible={isNavbarVisible} />
       <main className="pt-20">
         <div className="flex">
           {/* Super Admin Sidebar */}

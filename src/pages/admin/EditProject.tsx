@@ -8,6 +8,7 @@ const EditProject = () => {
   const [formData, setFormData] = useState<any>(null); // Start as null
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingProject, setIsLoadingProject] = useState(true); // For fetching
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>(); // Get project ID from URL
 
@@ -102,7 +103,7 @@ const EditProject = () => {
   if (isLoadingProject) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+                   <Navbar isVisible={isNavbarVisible} />
         <main className="pt-24 pb-12"><div className="container mx-auto px-4 max-w-5xl">Loading project data...</div></main>
       </div>
     );
@@ -111,7 +112,8 @@ const EditProject = () => {
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+    <Navbar isVisible={isNavbarVisible} />
+
         {formData && (
           <ProjectForm
             formData={formData}
