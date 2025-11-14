@@ -728,6 +728,9 @@ export default function PropertyMap() {
   const [selectedPropertyType, setSelectedPropertyType] = useState<string[]>([]);
   const [selectedPossession, setSelectedPossession] = useState<string[]>([]);
 
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
+
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(true);
   const [showBudgetPopup, setShowBudgetPopup] = useState(false);
@@ -1220,7 +1223,7 @@ const handlePropertyCardClick = (property: Property) => {
     <div className="flex flex-col h-screen w-full bg-gray-100">
       {/* Desktop Navbar */}
       <div className="hidden lg:block">
-        <Navbar />
+<Navbar isVisible={isNavbarVisible} />
       </div>
 
       {/* Desktop Filter Bar */}

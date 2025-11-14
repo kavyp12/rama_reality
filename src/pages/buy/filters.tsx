@@ -7,7 +7,7 @@ import {
     HeartIcon, ChevronDownIcon, BuildingIcon, MapPinIcon, TrainIcon, PlaneIcon, 
     PhoneIcon, MessageCircleIcon, XIcon, SearchIcon, CheckCircleIcon, 
     BedIcon, BathIcon, HomeIcon, MailIcon,
-    SlidersHorizontal, ArrowLeft, Plus
+    SlidersHorizontal, ArrowLeft, Plus,List
 } from 'lucide-react';
 import { Heart as HeartIconFilled } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
@@ -1132,6 +1132,24 @@ const initialFiltersWithSlug = useMemo(() => {
     
     const [filters, setFilters] = useState<typeof initialFilters>(initialFiltersWithSlug);
 
+    const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
+
+    useEffect(() => {
+      const handleScroll = () => {
+        const y = window.scrollY;
+        if (y > lastScrollY && y > 100) {
+          setIsNavbarVisible(false);
+        } else if (y < lastScrollY) {
+          setIsNavbarVisible(true);
+        }
+        setLastScrollY(y);
+      };
+
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+    }, [lastScrollY]);
+
 useEffect(() => {
     const params = new URLSearchParams();
     
@@ -1391,7 +1409,7 @@ useEffect(() => {
         return (
             <>
                 <div className="min-h-screen bg-gray-50 text-gray-900">
-                    <Navbar />
+                   <Navbar isVisible={isNavbarVisible} />
                     <main className="pt-20 pb-8">
                         <div className="container mx-auto px-4 lg:px-8">
                             <div className="animate-pulse space-y-4">
@@ -1414,7 +1432,7 @@ useEffect(() => {
         return (
             <>
                 <div className="min-h-screen bg-gray-50 text-gray-900">
-                    <Navbar />
+                    <Navbar isVisible={true} />
                     <main className="pt-20 pb-8">
                         <div className="container mx-auto px-4 lg:px-8 text-center">
                             <h1 className="text-3xl font-bold text-red-600">Error Loading Projects</h1>
@@ -1426,6 +1444,8 @@ useEffect(() => {
         );
     }
 
+    const stickyTopClass = isNavbarVisible ? 'top-16' : 'top-0';
+
     return (
         <>
             <style>{`
@@ -1433,12 +1453,14 @@ useEffect(() => {
                 div, h1, h2, h3, p, button, span, a, input, label { font-family: 'Poppins', sans-serif; }
             `}</style>
             <div className="min-h-screen bg-gray-50 text-gray-900">
-                <Navbar />
+<Navbar isVisible={isNavbarVisible} />
                 <main className="pt-20 pb-8">
                     <div className="container mx-auto px-4 lg:px-8">
                         
-<div className="block lg:hidden w-full bg-[#F0F7FF] shadow-sm z-30 p-3 space-y-3 mb-6 rounded-lg border border-[#E1ECF7]">
-                            <div className="flex items-center gap-2">
+<div className={`block lg:hidden w-full bg-[#F0F7FF] shadow-sm z-30 p-3 space-y-3 mb-6 rounded-lg border border-[#E1ECF7] sticky transition-all duration-300 ${stickyTopClass}`}> 
+
+  
+               <div className="flex items-center gap-2">
 
                                 <select
                                     value={filters.city}
@@ -1493,8 +1515,7 @@ useEffect(() => {
                             {pageTitle} ({filteredAndSortedProjects.length} Property)
                         </h1>
 
-<div className="hidden lg:flex bg-[#F0F7FF] py-2.5 px-4 mb-8 shadow-sm rounded-lg border border-[#E1ECF7] flex-wrap gap-2 justify-start items-center">
-                                                        
+<div className={`hidden lg:flex bg-[#F0F7FF] py-2.5 px-4 mb-8 shadow-sm rounded-lg border border-[#E1ECF7] flex-wrap gap-2 justify-start items-center sticky transition-all duration-300 ${stickyTopClass} z-30`}>                                                        
                             <select
                                 value={filters.city}
                                 onChange={(e) => handleFilterChange('city', e.target.value)}
@@ -1572,6 +1593,25 @@ useEffect(() => {
                 setFilters={setFilters}
                 filterOptions={filterOptions}
             />
+                <div className="block lg:hidden fixed bottom-0 left-0 right-0 w-full p-4 z-40" style={{ background: 'linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0))' }}>
+              <div className="flex bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 w-max mx-auto">
+                <Link 
+                  to="/map" 
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 text-gray-800 hover:bg-gray-50 transition-colors"
+                >
+                  <MapPinIcon className="h-5 w-5" />
+                  <span className="font-semibold">Map</span>
+                </Link>
+                <div className="w-px bg-gray-200"></div>
+                <button 
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-50 text-blue-700"
+                  onClick={() => window.scrollTo(0, 0)}
+                >
+                  <List className="h-5 w-5" />
+                  <span className="font-semibold">View Listings</span>
+                </button>
+              </div>
+            </div>
         </>
     );
 }

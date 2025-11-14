@@ -38,6 +38,7 @@ function useClickOutside(ref, handler) {
   }, [ref, handler]);
 }
 
+// ... (BudgetPopup component remains the same) ...
 // --- BUDGET POPUP COMPONENT ---
 const BudgetPopup = ({
   onClose,
@@ -99,6 +100,7 @@ const BudgetPopup = ({
   );
 };
 
+// ... (FullFiltersModal component remains the same) ...
 // --- FULL FILTERS MODAL ---
 const FullFiltersModal = ({
   isOpen,
@@ -384,6 +386,10 @@ const HeroSection = () => {
   const [maxBudget, setMaxBudget] = useState('');
   const [propertyType, setPropertyType] = useState<string[]>([]);
   const [possession, setPossession] = useState<string[]>([]);
+  
+  // These two states were already here
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   const [filterOptions, setFilterOptions] = useState({
   cities: ['Ahmedabad', 'Gandhinagar'],
@@ -401,6 +407,23 @@ const HeroSection = () => {
     setShowSuggestions(false);
   });
   
+  // 👇 ADDED: The scroll-handling logic
+  useEffect(() => {
+    const handleScroll = () => {
+      const y = window.scrollY;
+      if (y > lastScrollY && y > 100) { // If scrolling down AND past 100px
+        setIsNavbarVisible(false);
+      } else if (y < lastScrollY) { // If scrolling up
+        setIsNavbarVisible(true);
+      }
+      setLastScrollY(y);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]); // Dependency is correct
+
+
   useEffect(() => {
     const fetchAllProjects = async () => {
       try {
@@ -548,7 +571,9 @@ const handleSearch = () => {
 
   return (
     <>
-      <Navbar />
+      {/* This Navbar instance is now controlled by the useEffect above */}
+      <Navbar isVisible={isNavbarVisible} />
+      
       <div className="w-full bg-white pt-[72px]">
         <div className="container mx-auto max-w-screen-2xl px-2">
           {/* DESKTOP HERO */}
@@ -864,7 +889,7 @@ const handleSearch = () => {
                   <a
                     key={link}
                     href="#"
-                    className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    className="text-xs font-formatium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100"
                   >
                     {link}
                   </a>

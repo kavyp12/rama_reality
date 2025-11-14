@@ -4,9 +4,11 @@ import {
   ChevronDown,
   Menu,
   X,
-  Heart, // 👈 Import Heart
+  Heart,
 } from "lucide-react";
-import { useWishlist } from '../context/WishilistContext'; // 👈 Import the hook
+import { useWishlist } from '../context/WishilistContext';
+
+// ... (popularChoices, propertyTypes, budgets constants remain the same) ...
 const popularChoices = [
   { label: "Ready To Move", slug: "ready-to-move" },
   { label: "Possession within 1 year", slug: "possession-within-1-year" },
@@ -36,30 +38,16 @@ const budgets = [
 
 const PRIMARY = "#4299E1";
 
-const Navbar = () => {
+// 👇 MODIFIED: Navbar now accepts 'isVisible' as a prop
+const Navbar = ({ isVisible }: { isVisible: boolean }) => {
   const [isBuyDropdownOpen, setIsBuyDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
+  
   const buyRef = useRef(null);
-  const { wishlist } = useWishlist(); // 👈 Get wishlist count
+  const { wishlist } = useWishlist(); 
 
-  // ✅ Hide on scroll logic
-  useEffect(() => {
-    const handleScroll = () => {
-      const y = window.scrollY;
-      if (y > lastScrollY && y > 100) {
-        setIsVisible(false);
-      } else if (y < lastScrollY) {
-        setIsVisible(true);
-      }
-      setLastScrollY(y);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  // 👇 REMOVED: The 'isVisible' state and the scroll 'useEffect' are no longer needed here.
+  // They are now managed by the 'FilterResults' parent component.
 
   // ✅ Click outside to close BUY menu
   useEffect(() => {
@@ -78,9 +66,11 @@ const Navbar = () => {
       <nav
         className={`w-full bg-white text-gray-900 fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${
           isVisible ? "translate-y-0" : "-translate-y-full"
-        }`}
+        }`} // 👈 MODIFIED: Uses the 'isVisible' prop
       >
         <div className="container mx-auto max-w-screen-2xl px-4 py-3 flex items-center justify-between">
+
+          {/* ... (rest of the Navbar JSX remains identical) ... */}
 
           {/* ✅ LOGO */}
           <Link to="/" className="flex items-center space-x-2 text-2xl font-extrabold">
@@ -156,9 +146,25 @@ const Navbar = () => {
 
             {/* Other Links */}
             <Link className="text-[15px] font-medium hover:text-gray-900" to="/Properties">All Properties</Link>
-            {["Sell", "Explore", "New Projects"].map((i) => (
-              <a key={i} className="text-[15px] font-medium hover:text-gray-900">{i}</a>
-            ))}
+           {["Sell", "Explore", "New Projects"].map((item) => (
+  item === "New Projects" ? (
+    <Link
+      key={item}
+      to="/map"
+      className="text-[15px] font-medium hover:text-gray-900"
+    >
+      {item}
+    </Link>
+  ) : (
+    <a
+      key={item}
+      className="text-[15px] font-medium hover:text-gray-900"
+    >
+      {item}
+    </a>
+  )
+))}
+
           </div>
 
           {/* ✅ RIGHT DESKTOP BUTTONS */}
@@ -204,6 +210,7 @@ const Navbar = () => {
         </div>
       </nav>
 
+      {/* ... (rest of the Navbar JSX remains identical) ... */}
       {/* ✅ MOBILE MENU FULL SCREEN */}
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed top-16 left-0 w-full bg-white shadow-xl z-40 px-5 py-4">
@@ -249,8 +256,7 @@ const Navbar = () => {
           <Link className="block py-2" to="/Properties">All Properties</Link>
           <a className="block py-2">Sell</a>
           <a className="block py-2">Explore</a>
-          <a className="block py-2">New Projects</a>
-
+          <Link className="block py-2" to="/map">New Projects</Link>
           {/* ✅ WISHLIST BUTTON MOBILE (Replaces Admin) */}
           <Link
             to="/wishlist"
